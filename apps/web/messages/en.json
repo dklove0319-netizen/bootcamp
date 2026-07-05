@@ -1,0 +1,37 @@
+{
+  "app": {
+    "subtitle": "Unconscious pattern analysis",
+    "name": "Ozero's Mirror",
+    "nameEn": "오제로의 거울",
+    "tagline": "Training to separate fact from delusion in your own record."
+  },
+  "measure": {
+    "start": "Try the mirror now",
+    "guide1": "No need to write well. It doesn't have to be sentences.",
+    "guide2": "Write whatever comes up. If swearing comes up, write the swearing.",
+    "guide3": "Don't edit. Don't censor. Pour it out.",
+    "guide4": "There is no right or wrong writing. This record is not saved.",
+    "submit": "Done writing",
+    "empty": "Write at least one line.",
+    "loading": "Mirroring.",
+    "distinguishTitle": "Separate fact from delusion.",
+    "factDef": "A fact is what actually happened. What a camera would capture, what a recorder would record, what can be verified, what anyone would state the same way.",
+    "delusionDef": "A delusion is a story — an interpretation. The markers: adjectives, judgments, guesses, conclusions. A delusion is neither good nor bad. It is an indicator of how you interpret the world, and why.",
+    "tagAll": "Sort every piece before holding it up to the mirror.",
+    "toMirror": "Hold it up to the mirror",
+    "yourSplit": "You sorted this as fact {f} : delusion {d}.",
+    "resultTitle": "It divides like this.",
+    "fact": "Fact",
+    "delusion": "Delusion",
+    "unclear": "Which side would you place this on?",
+    "ratio": "Fact {f} : Delusion {d}",
+    "notSaved": "This record was not saved.",
+    "again": "Mirror again",
+    "failed": "Measurement failed. Please try again.",
+    "backHome": "Home"
+  },
+  "today": {
+    "building": "Today's dial — built in the next step.",
+    "backHome": "Home"
+  }
+}

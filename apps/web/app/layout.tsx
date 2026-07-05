@@ -1,14 +1,30 @@
-// 모든 페이지를 감싸는 껍데기(레이아웃). 문구는 messages/ko.json 에서만 (i18n 구조 — 지시서 8번).
+// 모든 페이지를 감싸는 껍데기(레이아웃). 문구는 messages/*.json 에서만 (i18n 구조 — 지시서 8번).
+// 요청마다 Accept-Language(브라우저 언어 명함)를 읽어 ko/en 을 정한다 — 영어권 자동 영어.
 import "./globals.css";
+import { headers } from "next/headers";
+import { pickLocale } from "../lib/locale";
+import { LocaleProvider } from "../lib/i18n";
 import ko from "../messages/ko.json";
+import en from "../messages/en.json";
 
-export const metadata = { title: ko.app.name, description: ko.app.tagline };
+async function getLocale() {
+  const h = await headers();
+  return pickLocale(h.get("accept-language"));
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export async function generateMetadata() {
+  const m = (await getLocale()) === "ko" ? ko : en;
+  return { title: m.app.name, description: m.app.tagline };
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="ko">
+    <html lang={locale}>
       <body>
-        <div className="frame">{children}</div>
+        <LocaleProvider locale={locale}>
+          <div className="frame">{children}</div>
+        </LocaleProvider>
       </body>
     </html>
   );

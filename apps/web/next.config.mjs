@@ -1,5 +1,19 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFileSync, existsSync } from "node:fs";
+
+// 모노레포 루트의 .env 를 서버 환경변수로 읽어온다 (열쇠 보관함은 루트 한 곳만 유지).
+// 이미 설정된 값은 덮지 않고, 값은 어디에도 출력하지 않는다.
+const rootDir = join(dirname(fileURLToPath(import.meta.url)), "../..");
+const rootEnvPath = join(rootDir, ".env");
+if (existsSync(rootEnvPath)) {
+  for (const line of readFileSync(rootEnvPath, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^([A-Za-z0-9_]+)\s*=\s*(.*)$/);
+    if (m && process.env[m[1]] === undefined) {
+      process.env[m[1]] = m[2].trim().replace(/^["']|["']$/g, "");
+    }
+  }
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
