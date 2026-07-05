@@ -1,12 +1,22 @@
-// 웹앱 시작점. 클로드에게 "plan.md 대로 첫 화면 만들어줘" 하면 여기부터 채워진다.
+// 홈 = 무료 측정 입구 (명세: docs/plan/screens/S17-무료측정.md · 스펙 1단계)
+// 21일 코스 입구는 블럭 4에서 로그인과 함께 다시 열린다.
+import Link from "next/link";
+import ko from "../messages/ko.json";
+
 export default function Home() {
   return (
-    <main style={{ fontFamily: "system-ui", padding: 48, textAlign: "center" }}>
-      <h1>vibe-kit</h1>
-      <p>여기에 내 아이디어를 얹으면 됩니다.</p>
-      <p style={{ color: "#888", fontSize: 14 }}>
-        클로드 코드: &quot;plan.md 대로 첫 블럭 만들어줘&quot;
-      </p>
+    <main>
+      <div style={{ marginTop: "20dvh" }}>
+        <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>{ko.app.name}</h1>
+        <p className="muted" style={{ marginTop: 8 }}>
+          {ko.app.tagline}
+        </p>
+      </div>
+      <div style={{ marginTop: "auto", paddingBottom: 16 }}>
+        <Link href="/measure" className="btn">
+          {ko.measure.start}
+        </Link>
+      </div>
     </main>
   );
 }

@@ -1,0 +1,72 @@
+/* 오제로의 거울 — 공통 스타일. 브랜드 색: 배경 #fff6e9 · 글씨 #545454 (사용자 지정) */
+:root {
+  color-scheme: light;
+  --bg: #fcf9f3;
+  --ink: #545454;
+  --muted: #9b968c;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  line-height: 1.6;
+  /* 한국어 조판: 어절(단어) 중간에서 줄이 끊기지 않게 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+/* 모바일 우선 — 폰 폭 기준 한 칼럼, 큰 화면에선 가운데 */
+.frame {
+  max-width: 420px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+}
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* 모든 문구는 가운데 정렬 (브랜드 규칙) */
+  text-align: center;
+}
+/* 줄들이 비슷한 길이로 나뉘어 가장 보기 좋게 (지원 브라우저에서) */
+main h1,
+main h2,
+main p {
+  text-wrap: balance;
+}
+/* 입력칸은 글을 쓰는 공간이라 왼쪽 정렬 유지 */
+main textarea,
+main input {
+  text-align: left;
+}
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:active {
+  opacity: 0.85;
+}
+.muted {
+  color: var(--muted);
+  font-size: 14px;
+}
