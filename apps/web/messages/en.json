@@ -30,6 +30,35 @@
     "failed": "Measurement failed. Please try again.",
     "backHome": "Home"
   },
+  "save": {
+    "prompt": "Would you like to keep this mirror?",
+    "hint": "Get an Ozero ID and today's mirror is saved. No address, no password.",
+    "cta": "Get an Ozero ID",
+    "new": "I'm new",
+    "existing": "I already have an Ozero ID",
+    "codePlaceholder": "Ozero ID (e.g. o023)",
+    "timeLabel": "When the mirror opens each day",
+    "submit": "Get it",
+    "saving": "Creating.",
+    "doneTitle": "Your Ozero ID",
+    "doneTime": "The mirror opens at {t} each day.",
+    "toMe": "See my mirror",
+    "have": "Ozero ID {code}",
+    "codeInvalid": "That ID format is not right. Example: o023",
+    "codeTaken": "That ID is already registered. If you're new, get a fresh ID.",
+    "failed": "Could not save. Please try again."
+  },
+  "me": {
+    "title": "My mirror",
+    "none": "You don't have an Ozero ID yet.",
+    "toMeasure": "Try the mirror now",
+    "deliverAt": "The mirror opens at {t} each day.",
+    "records": "Kept mirrors",
+    "empty": "No mirrors kept yet.",
+    "loading": "Loading.",
+    "failed": "Could not load.",
+    "backHome": "Home"
+  },
   "today": {
     "building": "Today's dial — built in the next step.",
     "backHome": "Home"

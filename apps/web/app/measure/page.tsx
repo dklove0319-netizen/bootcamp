@@ -5,6 +5,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMessages } from "../../lib/i18n";
+import SaveMirror from "./SaveMirror";
 
 type Label = "fact" | "delusion";
 type Component = { src: string; label: "fact" | "delusion" | "unclear" };
@@ -106,13 +107,19 @@ export default function Measure() {
         {result.question !== null && (
           <p style={{ marginTop: 26, fontSize: 17, lineHeight: 1.7 }}>{result.question}</p>
         )}
+        <SaveMirror
+          measurement={{
+            freeText: text,
+            userSplit: fragments.map((f, i) => ({ src: f, label: labels[i] ?? "unclear" })),
+            aiSplit: result.components,
+            question: result.question,
+          }}
+        />
         <div style={{ marginTop: "auto", paddingTop: 24, paddingBottom: 16 }}>
-          <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
-            {m.measure.notSaved}
-          </p>
           <button
             type="button"
-            className="btn"
+            className="muted"
+            style={{ background: "none", border: "none", textDecoration: "underline", cursor: "pointer", fontSize: 14, fontFamily: "inherit" }}
             onClick={() => {
               setPhase("write");
               setResult(null);
