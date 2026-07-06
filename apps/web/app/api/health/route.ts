@@ -24,7 +24,7 @@ function shapeOf(v: string | undefined): Shape {
 
 export async function GET(): Promise<Response> {
   return Response.json({
-    build: "v4-전용회선적용", // 어느 배포가 응답 중인지 식별용
+    build: "v5-빌드새김제거", // 어느 배포가 응답 중인지 식별용
 
     SUPABASE_URL: shapeOf(process.env.SUPABASE_URL),
     SUPABASE_ANON_KEY: shapeOf(process.env.SUPABASE_ANON_KEY),

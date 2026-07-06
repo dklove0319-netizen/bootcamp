@@ -29,9 +29,10 @@ const nextConfig = {
   ],
   // 브라우저에 보여도 되는 "공개 키"만 여기 올린다 — 이 목록에 있어야 화면(클라이언트) 코드에서 읽힌다.
   // 마스터 키(SERVICE_ROLE 등 secret)는 절대 이 목록에 넣지 않는다. 서버 전용.
+  // ⚠ 이 목록은 빌드 시점 값을 코드에 새겨 넣는다(런타임 주입을 가림). Vercel 민감 열쇠는 빌드 때 안 보이므로
+  //   빈 값이 새겨지는 사고가 난다 — 그래서 SUPABASE_URL/ANON_KEY 는 뺐다(현재 서버 전용, 런타임에 읽음).
+  //   클라이언트에서 Supabase 가 필요해지는 시점(3-1 로그인)에 서버 경유로 전달한다.
   env: {
-    SUPABASE_URL: process.env.SUPABASE_URL ?? "",
-    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? "",
     TOSS_CLIENT_KEY: process.env.TOSS_CLIENT_KEY ?? "",
     STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? "",
     KAKAO_MAP_APP_KEY: process.env.KAKAO_MAP_APP_KEY ?? "",
