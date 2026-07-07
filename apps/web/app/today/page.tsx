@@ -76,7 +76,13 @@ export default function Today() {
   const [contrast, setContrast] = useState<MirrorItem[] | null>(null);
   const [links, setLinks] = useState<{ delusion: string; emotion: string }[]>([]);
   const [pickedDelusion, setPickedDelusion] = useState<string | null>(null);
-  const [question, setQuestion] = useState<{ question: string; quoteDate: string | null; quoteSrc: string | null } | null>(null);
+  const [question, setQuestion] = useState<{
+    question: string;
+    quoteDate: string | null;
+    quoteSrc: string | null;
+    reflection: string | null;
+    evidence: { date: string; src: string }[];
+  } | null>(null);
   const [answer, setAnswer] = useState("");
   const [shared, setShared] = useState(false);
   const [action, setAction] = useState("");
@@ -507,10 +513,16 @@ export default function Today() {
       const key = ozeroKey();
       fetch("/api/today/question", { method: "POST", headers: { ...(key !== null ? { "x-ozero-key": key } : {}) } })
         .then((r) => r.json())
-        .then((d: { question?: string; quoteDate?: string | null; quoteSrc?: string | null }) => {
-          setQuestion({ question: d.question ?? m.loop.fallbackQuestion, quoteDate: d.quoteDate ?? null, quoteSrc: d.quoteSrc ?? null });
+        .then((d: { question?: string; quoteDate?: string | null; quoteSrc?: string | null; reflection?: string | null; evidence?: { date: string; src: string }[] }) => {
+          setQuestion({
+            question: d.question ?? m.loop.fallbackQuestion,
+            quoteDate: d.quoteDate ?? null,
+            quoteSrc: d.quoteSrc ?? null,
+            reflection: d.reflection ?? null,
+            evidence: Array.isArray(d.evidence) ? d.evidence : [],
+          });
         })
-        .catch(() => setQuestion({ question: m.loop.fallbackQuestion, quoteDate: null, quoteSrc: null }))
+        .catch(() => setQuestion({ question: m.loop.fallbackQuestion, quoteDate: null, quoteSrc: null, reflection: null, evidence: [] }))
         .finally(() => setBusy(false));
     }
     return (
@@ -520,7 +532,21 @@ export default function Today() {
           <p className="muted" style={{ marginTop: 24, fontSize: 14 }}>{m.loop.questionLoading}</p>
         ) : (
           <>
-            {question.quoteSrc !== null && (
+            {/* 구조 반사 (E-2) — 근거 인용(날짜+원문, 서버 검증 통과분만) 위에 반사 한 문장 */}
+            {question.evidence.length > 0 && (
+              <div style={{ marginTop: 22 }}>
+                {question.evidence.map((e, i) => (
+                  <div key={i} style={{ marginBottom: 10 }}>
+                    <p className="muted" style={{ margin: 0, fontSize: 13 }}>{m.loop.quotePrefix.replace("{d}", e.date)}</p>
+                    <p style={{ margin: "3px 0 0", fontSize: 15, lineHeight: 1.7 }}>“{e.src}”</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {question.reflection !== null && (
+              <p style={{ marginTop: 16, fontSize: 17, lineHeight: 1.9, fontWeight: 600 }}>{question.reflection}</p>
+            )}
+            {question.quoteSrc !== null && question.evidence.length === 0 && (
               <>
                 <p className="muted" style={{ marginTop: 22, fontSize: 13 }}>{m.loop.quotePrefix.replace("{d}", question.quoteDate ?? "")}</p>
                 <p style={{ marginTop: 6, fontSize: 16, lineHeight: 1.7 }}>“{question.quoteSrc}”</p>
