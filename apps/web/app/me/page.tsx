@@ -15,6 +15,17 @@ type Mirror3 = {
   repeats?: { quotes: { date: string; src: string }[] }[];
   note?: string | null;
   question?: string | null;
+  emotionCounts?: { label: string; count: number }[];
+  day1Answer?: { date: string; answer: string } | null;
+};
+type TodayInfo = {
+  course: string;
+  courseLength: number;
+  dayNo: number;
+  beyondCourse: boolean;
+  mid: { seven: boolean; fourteen: boolean; report: boolean };
+  grid: { dayNo: number; date: string; submitted: boolean }[];
+  today: { submitted: boolean } | null;
 };
 
 const KEY = "ozero_key";
@@ -25,6 +36,7 @@ export default function MyMirror() {
   const [state, setState] = useState<"loading" | "none" | "failed" | "ready">("loading");
   const [me, setMe] = useState<Me | null>(null);
   const [mirror3, setMirror3] = useState<Mirror3 | null>(null);
+  const [todayInfo, setTodayInfo] = useState<TodayInfo | null>(null);
 
   useEffect(() => {
     let key: string | null = null;
@@ -50,10 +62,16 @@ export default function MyMirror() {
         const data = (await res.json()) as Me;
         setMe(data);
         setState("ready");
-        // 서로 다른 날짜가 3일 이상이면 사흘의 거울을 불러온다
+        // 코스 상태 (격자 · 며칠째 · 중간 거울 노출)
+        fetch("/api/today", { headers: { "x-ozero-key": key as string } })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d: TodayInfo | null) => { if (d !== null) setTodayInfo(d); })
+          .catch(() => {});
+        // 서로 다른 날짜가 3일 이상이면 반복의 거울을 불러온다 (3 → 7 → 14일로 깊어짐)
         const dates = new Set(data.entries.map((e) => e.entry_date));
         if (dates.size >= 3 && key !== null) {
-          fetch("/api/observer/mirror3", { headers: { "x-ozero-key": key } })
+          const n = dates.size >= 14 ? 14 : dates.size >= 7 ? 7 : 3;
+          fetch(`/api/observer/mirror3?n=${n}`, { headers: { "x-ozero-key": key } })
             .then((r) => (r.ok ? r.json() : null))
             .then((d: Mirror3 | null) => {
               // 내용이 실제로 있을 때만 보여준다 (생성 순단 시 빈 골격 방지)
@@ -61,7 +79,7 @@ export default function MyMirror() {
               if (has) setMirror3(d);
             })
             .catch(() => {
-              // 사흘의 거울 실패는 내 거울 표시를 막지 않는다
+              // 반복의 거울 실패는 내 거울 표시를 막지 않는다
             });
         }
       })
@@ -108,6 +126,32 @@ export default function MyMirror() {
         {m.me.deliverAt.replace("{t}", formatHour(me.recordHour, loc))}
       </p>
 
+      {todayInfo !== null && (
+        <div style={{ marginTop: 22 }}>
+          <div style={{ display: "flex", gap: 5, justifyContent: "center", flexWrap: "wrap" }}>
+            {todayInfo.grid.map((g) => (
+              <span key={g.dayNo} title={g.date}
+                style={{
+                  width: 18, height: 18, borderRadius: 4, display: "inline-block",
+                  border: "1px solid #d9d2c4",
+                  background: g.submitted ? "var(--ink)" : "transparent",
+                }} />
+            ))}
+          </div>
+          <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>
+            {m.me.gridLine.replace("{n}", String(Math.min(todayInfo.dayNo, todayInfo.courseLength))).replace("{len}", String(todayInfo.courseLength))}
+          </p>
+          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+            {!todayInfo.beyondCourse && (todayInfo.today === null || todayInfo.today.submitted === false) && (
+              <Link href="/today" className="btn">{m.me.startToday}</Link>
+            )}
+            {todayInfo.mid.report && (
+              <Link href="/report" style={{ textDecoration: "underline", fontSize: 14 }}>{m.report.title}</Link>
+            )}
+          </div>
+        </div>
+      )}
+
       {mirror3 !== null && (
         <div style={{ marginTop: 34, paddingBottom: 20, borderBottom: "1px solid #e3d9c8" }}>
           <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>{m.me.mirror3Title}</h2>
@@ -122,23 +166,38 @@ export default function MyMirror() {
               ))}
             </div>
           ))}
+          {(mirror3.emotionCounts ?? []).length > 0 && (
+            <p className="muted" style={{ fontSize: 13, margin: "10px 0 0" }}>
+              {m.me.emotionFreq}: {(mirror3.emotionCounts ?? []).map((e) => `${e.label} ${e.count}`).join(" · ")}
+            </p>
+          )}
           {typeof mirror3.note === "string" && mirror3.note !== "" && (
             <p style={{ fontSize: 15, lineHeight: 1.7, margin: "10px 0 0" }}>{mirror3.note}</p>
+          )}
+          {mirror3.day1Answer != null && (
+            <div style={{ marginTop: 16 }}>
+              <p className="muted" style={{ fontSize: 13, margin: 0 }}>{m.me.day1Face.replace("{d}", mirror3.day1Answer.date)}</p>
+              <p style={{ fontSize: 15, lineHeight: 1.7, margin: "4px 0 0" }}>“{mirror3.day1Answer.answer}”</p>
+            </div>
           )}
           {typeof mirror3.question === "string" && mirror3.question !== "" && (
             <p style={{ fontSize: 16, lineHeight: 1.7, margin: "14px 0 0" }}>{mirror3.question}</p>
           )}
 
-          <div style={{ marginTop: 26, padding: "18px 16px", border: "1px solid #d9d2c4", borderRadius: 12 }}>
-            <p className="font-main" style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>{m.me.courseTitle}</p>
-            <p className="muted" style={{ fontSize: 14, lineHeight: 1.8, margin: "8px 0 0" }}>{m.me.courseDesc}</p>
-            <p style={{ margin: "12px 0 0", fontSize: 15 }}>
-              <span className="muted" style={{ textDecoration: "line-through", marginRight: 8 }}>{formatKrw(LIST_PRICE)}</span>
-              <span className="font-main" style={{ fontSize: 20, fontWeight: 700 }}>{formatKrw(COURSE_PRICE)}</span>
-            </p>
-            <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "8px 0 0" }}>{m.me.courseConsent}</p>
-            <p style={{ fontSize: 14, margin: "12px 0 0" }}>{m.me.courseSoon}</p>
-          </div>
+          {(todayInfo === null || todayInfo.course !== "mirror21") && (
+            <div style={{ marginTop: 26, padding: "18px 16px", border: "1px solid #d9d2c4", borderRadius: 12 }}>
+              <p className="font-main" style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>{m.me.courseTitle}</p>
+              <p className="muted" style={{ fontSize: 14, lineHeight: 1.8, margin: "8px 0 0" }}>{m.me.courseDesc}</p>
+              <p style={{ margin: "12px 0 0", fontSize: 15 }}>
+                <span className="muted" style={{ textDecoration: "line-through", marginRight: 8 }}>{formatKrw(LIST_PRICE)}</span>
+                <span className="font-main" style={{ fontSize: 20, fontWeight: 700 }}>{formatKrw(COURSE_PRICE)}</span>
+              </p>
+              <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "8px 0 0" }}>{m.me.courseConsent}</p>
+              <div style={{ marginTop: 14 }}>
+                <Link href="/course" className="btn">{m.me.courseCta}</Link>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

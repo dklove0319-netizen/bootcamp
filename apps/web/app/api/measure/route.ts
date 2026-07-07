@@ -15,6 +15,7 @@ export const runtime = "nodejs";
 const MAX_CHARS = 4000; // 비용·응답시간 상한
 const LIMIT_ANON = 1; // 비로그인 1일 1회
 const LIMIT_OBSERVER = 3; // 오제로 아이디 보유자 1일 3회 (스펙: 로그인 1일 3회)
+const LIMIT_COURSE = 10; // 21일 코스 멤버 "빠른 거울" 1일 10회 (결정 2026-07-06 — 제안서: changes/2026-07-06-빠른거울-코스혜택.md)
 const IP_SALT = "ozero-mirror-v1"; // 해시 소금 — 원문 IP 는 남지 않게
 const MAX_REASONS = 2; // 자세규정 8-6: 가장 선명한 오염 1~2곳만 짚는다
 
@@ -96,7 +97,14 @@ async function dailyLimitOf(req: Request): Promise<number> {
       { headers: store.headers, cache: "no-store" }
     );
     const rows = r.ok ? ((await r.json()) as unknown[]) : [];
-    return rows.length > 0 ? LIMIT_OBSERVER : LIMIT_ANON;
+    if (rows.length === 0) return LIMIT_ANON;
+    // 21일 코스 멤버는 빠른 거울 하루 10회
+    const jr = await fetch(
+      `${store.url}/rest/v1/journeys?user_id=eq.${secret}&course=eq.mirror21&status=eq.active&select=id&limit=1`,
+      { headers: store.headers, cache: "no-store" }
+    );
+    const journeys = jr.ok ? ((await jr.json()) as unknown[]) : [];
+    return journeys.length > 0 ? LIMIT_COURSE : LIMIT_OBSERVER;
   } catch {
     return LIMIT_ANON;
   }

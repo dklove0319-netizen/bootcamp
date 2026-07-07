@@ -34,11 +34,17 @@ export async function GET(req: Request): Promise<Response> {
     return Response.json({ error: "no-key" }, { status: 401 });
   }
 
+  // n = 며칠의 거울인지 (3 기본 · 7 · 14 — S12 중간 거울도 이 창구를 쓴다)
+  const nParam = parseInt(new URL(req.url).searchParams.get("n") ?? "3", 10);
+  const n = [3, 7, 14].includes(nParam) ? nParam : 3;
+
   const er = await fetch(
-    `${store.url}/rest/v1/daily_entries?user_id=eq.${secret}&deleted_at=is.null&order=entry_date.desc&limit=7&select=entry_date,free_text`,
+    `${store.url}/rest/v1/daily_entries?user_id=eq.${secret}&deleted_at=is.null&order=entry_date.desc&limit=${n + 4}&select=entry_date,day_no,free_text,emotion_label,answer_text`,
     { headers: store.headers, cache: "no-store" }
   );
-  const rows = er.ok ? ((await er.json()) as { entry_date: string; free_text: string | null }[]) : [];
+  const rows = er.ok
+    ? ((await er.json()) as { entry_date: string; day_no: number; free_text: string | null; emotion_label: string | null; answer_text: string | null }[])
+    : [];
   // 같은 날 여러 줄이어도 날짜당 하나로 (최신 우선)
   const byDate = new Map<string, string>();
   for (const r of rows) {
@@ -46,9 +52,23 @@ export async function GET(req: Request): Promise<Response> {
       byDate.set(r.entry_date, r.free_text);
     }
   }
-  const days = [...byDate.entries()].slice(0, 3); // 최근 3일
+  const days = [...byDate.entries()].slice(0, n);
   if (days.length < 3) {
-    return Response.json({ days: days.length }); // 아직 사흘이 안 됨 — 조용히
+    return Response.json({ days: days.length }); // 아직 셀 만큼 안 쌓임 — 조용히
+  }
+
+  // 감정 이름 빈도 (서버 계산 — S12 사실 제시)
+  const emotionCounts = new Map<string, number>();
+  for (const r of rows.slice(0, n)) {
+    if (typeof r.emotion_label === "string" && r.emotion_label !== "") {
+      emotionCounts.set(r.emotion_label, (emotionCounts.get(r.emotion_label) ?? 0) + 1);
+    }
+  }
+  // 14일 시차 대면: 1일째 답변 전문 (있을 때만 — 없으면 칸 생략, 실패 문구 금지)
+  let day1Answer: { date: string; answer: string } | null = null;
+  if (n >= 14) {
+    const d1 = rows.find((r) => r.day_no === 1 && typeof r.answer_text === "string" && r.answer_text !== "");
+    if (d1 !== undefined) day1Answer = { date: d1.entry_date, answer: d1.answer_text as string };
   }
 
   const userMessage = days
@@ -87,8 +107,15 @@ export async function GET(req: Request): Promise<Response> {
     const question =
       typeof parsed.question === "string" && parsed.question.trim() !== "" ? parsed.question.trim().slice(0, 300) : null;
 
-    return Response.json({ days: 3, repeats, note: repeats.length > 0 ? note : null, question });
+    return Response.json({
+      days: days.length,
+      repeats,
+      note: repeats.length > 0 ? note : null,
+      question,
+      emotionCounts: [...emotionCounts.entries()].sort((a, b) => b[1] - a[1]).map(([label, count]) => ({ label, count })),
+      day1Answer,
+    });
   } catch {
-    return Response.json({ days: 3, repeats: [], note: null, question: null });
+    return Response.json({ days: days.length, repeats: [], note: null, question: null, emotionCounts: [], day1Answer });
   }
 }
