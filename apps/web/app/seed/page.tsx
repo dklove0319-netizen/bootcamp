@@ -9,6 +9,12 @@ const CODE = "ozero_code";
 const BK = "ozero_key_backup";
 const BC = "ozero_code_backup";
 
+// 서버 오류 코드 → 사람 말 (운영자 잠금: 검증 보고서 2026-07-08 개선 5)
+function errText(code: string | undefined): string {
+  if (code === "operator-only") return "이 도구는 운영자 전용이에요. 운영자(o000) 또는 시험 관찰자(o999) 열쇠가 있는 기기에서만 쓸 수 있어요.";
+  return code ?? "만들지 못했어요.";
+}
+
 export default function Seed() {
   const [state, setState] = useState<"idle" | "busy" | "done" | "failed">("idle");
   const [msg, setMsg] = useState("");
@@ -35,7 +41,7 @@ export default function Seed() {
         body: JSON.stringify({ days }),
       });
       const data = (await res.json()) as { code?: string; secret?: string; error?: string };
-      if (!res.ok || data.secret === undefined) { setState("failed"); setMsg(data.error ?? "만들지 못했어요."); return; }
+      if (!res.ok || data.secret === undefined) { setState("failed"); setMsg(errText(data.error)); return; }
       becomeTest(data.secret);
       setState("done");
       setMsg(days === 3 ? "3일치가 준비됐어요. 지금 당신은 시험 관찰자 o999예요." : "21일치가 준비됐어요. 지금 당신은 시험 관찰자 o999예요.");
@@ -77,7 +83,7 @@ export default function Seed() {
         body: JSON.stringify({ mode: "custom-init", days }),
       });
       const initData = (await init.json()) as { secret?: string; error?: string };
-      if (!init.ok || initData.secret === undefined) { setState("failed"); setMsg(initData.error ?? "만들지 못했어요."); return; }
+      if (!init.ok || initData.secret === undefined) { setState("failed"); setMsg(errText(initData.error)); return; }
 
       // 2) 하루씩 심기 — 거울이 그 날 기록을 가르는 동안 진행을 보여준다
       for (let i = 0; i < blocks.length; i++) {

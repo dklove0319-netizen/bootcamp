@@ -115,12 +115,16 @@ export async function POST(req: Request): Promise<Response> {
   if (store === null) return Response.json({ error: "unavailable" }, { status: 503 });
   const secret = req.headers.get("x-ozero-key") ?? "";
   if (!/^[0-9a-fA-F-]{36}$/.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
-  // 등록된 관찰자만 (지어낸 열쇠 차단)
-  const pr = await fetch(`${store.url}/rest/v1/profiles?user_id=eq.${secret}&select=user_id`, {
+  // 운영자(o000)·시험 관찰자(o999) 열쇠만 (검증 보고서 2026-07-08 개선 5 — 일반 관찰자의 시험 도구 접근 차단)
+  const pr = await fetch(`${store.url}/rest/v1/profiles?user_id=eq.${secret}&select=user_id,observer_code`, {
     headers: store.headers, cache: "no-store",
   });
-  if (!(pr.ok && ((await pr.json()) as unknown[]).length > 0)) {
+  const requester = pr.ok ? ((await pr.json()) as { observer_code: string }[]) : [];
+  if (requester.length === 0) {
     return Response.json({ error: "not-found" }, { status: 404 });
+  }
+  if (requester[0].observer_code !== "o000" && requester[0].observer_code !== "o999") {
+    return Response.json({ error: "operator-only" }, { status: 403 });
   }
 
   let days = 3;

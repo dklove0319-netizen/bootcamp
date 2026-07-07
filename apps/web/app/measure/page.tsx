@@ -63,6 +63,7 @@ export default function Measure() {
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [gateReady, setGateReady] = useState(false); // 입구 한도 확인이 끝나기 전엔 제출 버튼을 잠근다 (차단 대상자가 쓰기 시작하는 깜빡임 방지)
   const [result, setResult] = useState<MeasureResult | null>(null);
   const [recall, setRecall] = useState<Recall | null>(null);
 
@@ -76,7 +77,8 @@ export default function Measure() {
       })
       .catch(() => {
         // 확인 실패면 그냥 진행 — 최종 판정은 서버가 한다
-      });
+      })
+      .finally(() => setGateReady(true));
     // 어제의 회수: 아이디 보유자에게 "내일 돌아온다" 약속을 지키는 화면
     if (key !== null) {
       fetch("/api/observer/recall", { headers: { "x-ozero-key": key } })
@@ -287,7 +289,7 @@ export default function Measure() {
         <p style={{ color: "#a05b3f", fontSize: 14, margin: "10px 0 0" }}>{error}</p>
       )}
       <div style={{ marginTop: "auto", paddingTop: 20, paddingBottom: 16 }}>
-        <button type="button" className="btn" onClick={toMirror} disabled={loading}>
+        <button type="button" className="btn" onClick={toMirror} disabled={loading || !gateReady}>
           {loading ? m.measure.loading : m.measure.toMirror}
         </button>
       </div>

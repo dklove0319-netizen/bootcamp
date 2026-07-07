@@ -64,7 +64,11 @@ async function nextCode(store: Store): Promise<string> {
   let max = 55; // 레터에서 o055까지 발급됨 — 앱은 o056부터
   for (const row of rows) {
     const m = /^o(\d+)$/.exec(row.observer_code ?? "");
-    if (m) max = Math.max(max, parseInt(m[1], 10));
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (n >= 900) continue; // 900번대 이상 = 시험 대역(o999 등) — 발급 순번 계산에서 제외 (검증 보고서 2026-07-08 개선 1)
+      max = Math.max(max, n);
+    }
   }
   return "o" + String(max + 1).padStart(3, "0");
 }
