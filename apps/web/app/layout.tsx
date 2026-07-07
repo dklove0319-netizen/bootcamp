@@ -14,7 +14,8 @@ async function getLocale() {
 
 export async function generateMetadata() {
   const m = (await getLocale()) === "ko" ? ko : en;
-  return { title: m.app.name, description: m.app.tagline };
+  // manifest = 홈 화면 추가용 명함 — 아이폰은 이걸로 설치해야 웹 푸시를 받을 수 있다 (블럭 8-1)
+  return { title: m.app.name, description: m.app.tagline, manifest: "/manifest.webmanifest" };
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

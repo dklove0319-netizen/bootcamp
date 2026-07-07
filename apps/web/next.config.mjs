@@ -36,6 +36,7 @@ const nextConfig = {
     TOSS_CLIENT_KEY: process.env.TOSS_CLIENT_KEY ?? "",
     STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? "",
     KAKAO_MAP_APP_KEY: process.env.KAKAO_MAP_APP_KEY ?? "",
+    VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY ?? "", // 웹 푸시 공개 도장 — 공개 전제 키 (Vercel 에선 일반(비민감) 변수로)
   },
 };
 

@@ -88,7 +88,14 @@
     "empty": "아직 남긴 거울이 없어요.",
     "loading": "불러오고 있어요.",
     "failed": "불러오지 못했어요.",
-    "backHome": "홈으로"
+    "backHome": "홈으로",
+    "notifyOn": "저녁 알림 켜기",
+    "notifyOnDone": "저녁 알림이 켜졌어요. 매일 {t}에 이 기기로 알려드려요.",
+    "notifyOff": "알림 끄기",
+    "notifyIos": "아이폰은 사파리의 공유 버튼 → '홈 화면에 추가' 뒤에 켤 수 있어요.",
+    "notifyUnsupported": "이 브라우저는 알림을 지원하지 않아요.",
+    "notifyDenied": "알림이 차단돼 있어요. 브라우저 설정에서 허용해주세요.",
+    "notifyFailed": "알림을 켜지 못했어요. 다시 시도해주세요."
   },
   "today": {
     "building": "오늘의 눈금 화면 — 다음 스텝에서 만들어져요.",

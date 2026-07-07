@@ -1,0 +1,15 @@
+# 저녁 질문 푸시 시계 (블럭 8-1) — 매시 정각에 발송 창구를 깨운다.
+# 시각 판정·중복 방지는 전부 서버(/api/push/tick)가 한다 — 여긴 그냥 매시간 노크만.
+# 수동 실행: GitHub → Actions → push-tick → Run workflow
+name: push-tick
+on:
+  schedule:
+    - cron: "0 * * * *" # 매시 정각 (UTC 기준이지만 각자의 시간대 판정은 서버가 한다)
+  workflow_dispatch: {}
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: knock
+        run: curl -s -X POST https://ozero-mirror.vercel.app/api/push/tick

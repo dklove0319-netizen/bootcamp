@@ -1,0 +1,9 @@
+{
+  "name": "오제로의 거울",
+  "short_name": "오제로의 거울",
+  "description": "사실만 남기면, 문제는 대개 생각보다 작습니다.",
+  "start_url": "/me",
+  "display": "standalone",
+  "background_color": "#fcf9f3",
+  "theme_color": "#fcf9f3"
+}
