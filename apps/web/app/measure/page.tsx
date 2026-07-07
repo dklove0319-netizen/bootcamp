@@ -12,6 +12,7 @@ import SaveMirror from "./SaveMirror";
 type MirrorItem = { src: string; label: "fact" | "delusion" | "unclear"; reason: string | null };
 type MeasureResult = {
   items: MirrorItem[];
+  actionNote: string | null;
   factCount: number;
   delusionCount: number;
   clean: boolean;
@@ -57,6 +58,8 @@ export default function Measure() {
   const [phase, setPhase] = useState<"compose" | "result" | "limited">("compose");
   const [text, setText] = useState("");
   const [facts, setFacts] = useState("");
+  const [feelings, setFeelings] = useState("");
+  const [actions, setActions] = useState("");
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -106,7 +109,7 @@ export default function Measure() {
           "content-type": "application/json",
           ...(key !== null ? { "x-ozero-key": key } : {}),
         },
-        body: JSON.stringify({ text, facts }),
+        body: JSON.stringify({ text, facts, feelings, actions }),
       });
       const data = (await res.json()) as MeasureResult & { error?: string };
       if (!res.ok || data.error !== undefined) {
@@ -168,6 +171,12 @@ export default function Measure() {
             );
           })}
         </div>
+        {result.actionNote !== null && (
+          <div style={{ marginTop: 20 }}>
+            <p className="muted" style={{ margin: 0, fontSize: 13 }}>{m.measure.actionsLabel}</p>
+            <p className="muted" style={{ margin: "3px 0 0", fontSize: 13, lineHeight: 1.7 }}>{result.actionNote}</p>
+          </div>
+        )}
         <p className="font-main" style={{ fontSize: 20, fontWeight: 700, margin: "30px 0 0" }}>
           {m.measure.mirrorRatio
             .replace("{f}", String(result.factCount))
@@ -183,7 +192,11 @@ export default function Measure() {
         <SaveMirror
           measurement={{
             freeText: text,
-            userSplit: [{ src: facts, label: "facts" }],
+            userSplit: [
+              { src: facts, label: "facts" },
+              ...(feelings.trim() !== "" ? [{ src: feelings.trim(), label: "feelings" }] : []),
+              ...(actions.trim() !== "" ? [{ src: actions.trim(), label: "actions" }] : []),
+            ],
             aiSplit: result.items.map((c) => ({ src: c.src, label: c.label })),
             question: result.question,
             answer: answer.trim() !== "" ? answer.trim() : null,
@@ -246,8 +259,18 @@ export default function Measure() {
       <p className="muted" style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.8 }}>{m.measure.delusionDef}</p>
       <p className="muted" style={{ margin: "12px 0 0", fontSize: 13, lineHeight: 1.8 }}>{m.measure.example1}</p>
       <p className="muted" style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.8 }}>{m.measure.example2}</p>
-      <p style={{ margin: "16px 0 0", fontSize: 15, lineHeight: 1.8 }}>{m.measure.factsGuide}</p>
-      <textarea value={facts} onChange={(e) => setFacts(e.target.value)} rows={6} style={{ ...boxStyle, marginTop: 10 }} />
+
+      <p style={{ margin: "22px 0 2px", fontSize: 16, fontWeight: 600 }}>{m.measure.factsLabel}</p>
+      <p className="muted" style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.7 }}>{m.measure.factsHelp}</p>
+      <textarea value={facts} onChange={(e) => setFacts(e.target.value)} rows={5} style={boxStyle} />
+
+      <p style={{ margin: "22px 0 2px", fontSize: 16, fontWeight: 600 }}>{m.measure.feelingsLabel}</p>
+      <p className="muted" style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.7 }}>{m.measure.feelingsHelp}</p>
+      <textarea value={feelings} onChange={(e) => setFeelings(e.target.value)} rows={3} style={boxStyle} />
+
+      <p style={{ margin: "22px 0 2px", fontSize: 16, fontWeight: 600 }}>{m.measure.actionsLabel}</p>
+      <p className="muted" style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.7 }}>{m.measure.actionsHelp}</p>
+      <textarea value={actions} onChange={(e) => setActions(e.target.value)} rows={3} style={boxStyle} />
 
       {error !== "" && (
         <p style={{ color: "#a05b3f", fontSize: 14, margin: "10px 0 0" }}>{error}</p>

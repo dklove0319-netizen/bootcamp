@@ -17,6 +17,11 @@ export default function Home() {
         <h2 className="font-main" style={{ fontSize: 17, fontWeight: 500, margin: "4px 0 0", color: "var(--muted)" }}>
           {m.app.nameEn}
         </h2>
+        <p className="muted" style={{ margin: "26px 0 0", fontSize: 14, lineHeight: 1.9 }}>
+          {m.app.line1}
+          <br />
+          {m.app.line2}
+        </p>
       </div>
       <div style={{ marginTop: "auto", paddingBottom: 16 }}>
         <Link href="/measure" className="btn">
