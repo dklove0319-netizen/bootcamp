@@ -17,6 +17,13 @@ type MeasureResult = {
   clean: boolean;
   question: string | null;
 };
+type Recall = {
+  none?: boolean;
+  date?: string;
+  question?: string | null;
+  answer?: string | null;
+  reflection?: string | null;
+};
 
 /** 이 기기의 오제로 비밀 열쇠 (있으면 하루 3회) */
 function ozeroKey(): string | null {
@@ -50,13 +57,15 @@ export default function Measure() {
   const [phase, setPhase] = useState<"compose" | "result" | "limited">("compose");
   const [text, setText] = useState("");
   const [facts, setFacts] = useState("");
+  const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MeasureResult | null>(null);
+  const [recall, setRecall] = useState<Recall | null>(null);
 
   useEffect(() => {
-    // 입구 사전 확인: 오늘 한도를 이미 썼으면 쓰기 전에 알려준다
     const key = ozeroKey();
+    // 입구 사전 확인: 오늘 한도를 이미 썼으면 쓰기 전에 알려준다
     fetch("/api/measure", { headers: key !== null ? { "x-ozero-key": key } : {} })
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { allowed?: boolean } | null) => {
@@ -65,6 +74,17 @@ export default function Measure() {
       .catch(() => {
         // 확인 실패면 그냥 진행 — 최종 판정은 서버가 한다
       });
+    // 어제의 회수: 아이디 보유자에게 "내일 돌아온다" 약속을 지키는 화면
+    if (key !== null) {
+      fetch("/api/observer/recall", { headers: { "x-ozero-key": key } })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: Recall | null) => {
+          if (d !== null && d.none !== true && typeof d.question === "string") setRecall(d);
+        })
+        .catch(() => {
+          // 회수 실패는 오늘의 기록을 막지 않는다
+        });
+    }
   }, []);
 
   async function toMirror() {
@@ -154,7 +174,11 @@ export default function Measure() {
             .replace("{d}", String(result.delusionCount))}
         </p>
         {result.question !== null && (
-          <p style={{ marginTop: 26, fontSize: 17, lineHeight: 1.7 }}>{result.question}</p>
+          <>
+            <p style={{ marginTop: 26, fontSize: 17, lineHeight: 1.7 }}>{result.question}</p>
+            <p className="muted" style={{ margin: "14px 0 6px", fontSize: 13 }}>{m.measure.answerLabel}</p>
+            <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={3} style={boxStyle} />
+          </>
         )}
         <SaveMirror
           measurement={{
@@ -162,6 +186,7 @@ export default function Measure() {
             userSplit: [{ src: facts, label: "facts" }],
             aiSplit: result.items.map((c) => ({ src: c.src, label: c.label })),
             question: result.question,
+            answer: answer.trim() !== "" ? answer.trim() : null,
           }}
         />
         <div style={{ marginTop: "auto", paddingTop: 24, paddingBottom: 16 }}>
@@ -190,6 +215,24 @@ export default function Measure() {
 
   return (
     <main>
+      {recall !== null && (
+        <div style={{ marginTop: 24, paddingBottom: 8, borderBottom: "1px solid #e3d9c8" }}>
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>{m.measure.recallTitle}</p>
+          <p style={{ margin: "8px 0 0", fontSize: 15, lineHeight: 1.7 }}>{recall.question}</p>
+          {recall.answer !== null && recall.answer !== undefined ? (
+            <>
+              <p className="muted" style={{ margin: "10px 0 0", fontSize: 13 }}>
+                {m.measure.recallAnswer} — “{recall.answer}”
+              </p>
+              {typeof recall.reflection === "string" && (
+                <p style={{ margin: "10px 0 8px", fontSize: 15, lineHeight: 1.8 }}>{recall.reflection}</p>
+              )}
+            </>
+          ) : (
+            <p className="muted" style={{ margin: "10px 0 8px", fontSize: 13 }}>{m.measure.recallNoAnswer}</p>
+          )}
+        </div>
+      )}
       <div className="muted" style={{ marginTop: 24, lineHeight: 1.8 }}>
         <p style={{ margin: 0 }}>{m.measure.guide1}</p>
         <p style={{ margin: 0 }}>{m.measure.guide2}</p>

@@ -36,15 +36,21 @@ type CreateBody = {
   code?: string;
   recordHour?: number;
   timezone?: string;
-  measurement?: { freeText?: string; userSplit?: Split[]; aiSplit?: Split[]; question?: string | null };
+  measurement?: {
+    freeText?: string;
+    userSplit?: Split[];
+    aiSplit?: Split[];
+    question?: string | null;
+    answer?: string | null; // 결과 화면에서 질문에 남긴 답 — 내일 회수의 재료
+  };
 };
 
-/** 입력 코드를 표준형으로: 공백 제거·소문자·'o' 보정·3자리 0채움. 형식 안 맞으면 null */
+/** 입력 코드를 표준형으로: 공백 제거·소문자·'o' 보정·3자리 0채움. 형식 안 맞으면 null.
+ *  o000 = 운영자(레터 발행인) 본인 번호 — 0번도 유효하다. */
 function normalizeCode(raw: string): string | null {
   const s = raw.trim().toLowerCase().replace(/^o/, "");
   if (!/^\d{1,4}$/.test(s)) return null;
   const n = parseInt(s, 10);
-  if (n < 1) return null;
   return "o" + String(n).padStart(3, "0");
 }
 
@@ -155,6 +161,7 @@ export async function POST(req: Request): Promise<Response> {
             user_split: Array.isArray(m.userSplit) ? m.userSplit : null,
             ai_split: Array.isArray(m.aiSplit) ? m.aiSplit : null,
             question_text: typeof m.question === "string" ? m.question : null,
+            answer_text: typeof m.answer === "string" && m.answer.trim() !== "" ? m.answer.trim() : null,
             submitted_at: new Date().toISOString(),
           }),
         });

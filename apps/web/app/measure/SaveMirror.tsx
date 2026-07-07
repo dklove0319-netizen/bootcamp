@@ -12,6 +12,7 @@ export type Measurement = {
   userSplit: { src: string; label: string }[];
   aiSplit: { src: string; label: string }[];
   question: string | null;
+  answer: string | null; // 질문에 남긴 답 — 내일 회수의 재료
 };
 
 const KEY = "ozero_key";
@@ -28,15 +29,29 @@ export default function SaveMirror({ measurement }: { measurement: Measurement }
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ observerCode: string; recordHour: number } | null>(null);
+  const [todaySaved, setTodaySaved] = useState(false);
 
   useEffect(() => {
-    // 이미 이 기기에 오제로 아이디가 있으면 저장 폼 대신 "내 거울" 안내만 보여준다
+    // 이미 이 기기에 오제로 아이디가 있으면 저장 폼 대신, 오늘의 거울을 바로 남긴다
+    // (안 그러면 둘째 날부터 기록이 증발해 "내일 돌아온다" 약속이 깨진다)
     try {
       const code = window.localStorage.getItem(CODE);
-      if (code !== null && window.localStorage.getItem(KEY) !== null) setHaveCode(code);
+      const key = window.localStorage.getItem(KEY);
+      if (code !== null && key !== null) {
+        setHaveCode(code);
+        fetch("/api/observer/entry", {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-ozero-key": key },
+          body: JSON.stringify(measurement),
+        })
+          .then((r) => setTodaySaved(r.ok))
+          .catch(() => setTodaySaved(false));
+      }
     } catch {
       // localStorage 접근 불가(사생활 모드 등)면 그냥 저장 폼 경로로 둔다
     }
+    // measurement 는 결과 화면 진입 시점에 확정된 값 — 최초 1회만 저장한다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function submit() {
@@ -70,13 +85,16 @@ export default function SaveMirror({ measurement }: { measurement: Measurement }
     }
   }
 
-  // 이미 아이디가 있는 기기
+  // 이미 아이디가 있는 기기 — 오늘의 거울이 자동으로 남는다
   if (haveCode !== null) {
     return (
       <div style={{ marginTop: 26 }}>
-        <p className="muted" style={{ fontSize: 14, marginBottom: 8 }}>
+        <p className="muted" style={{ fontSize: 14, marginBottom: 4 }}>
           {m.save.have.replace("{code}", haveCode)}
         </p>
+        {todaySaved && (
+          <p style={{ fontSize: 15, margin: "0 0 8px" }}>{m.save.savedToday}</p>
+        )}
         <Link href="/me" className="muted" style={{ textDecoration: "underline" }}>
           {m.save.toMe}
         </Link>
@@ -123,7 +141,10 @@ export default function SaveMirror({ measurement }: { measurement: Measurement }
           <button
             key={opt}
             type="button"
-            onClick={() => setMode(opt)}
+            onClick={() => {
+              setMode(opt);
+              setError(""); // 모드를 바꾸면 이전 모드의 오류는 지운다
+            }}
             style={{
               padding: "8px 16px",
               borderRadius: 999,
