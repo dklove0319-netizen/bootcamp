@@ -1,16 +1,18 @@
-// 무료 측정 — 기록 입력 → 사용자가 먼저 구별 → AI 거울 대조 (명세: docs/plan/screens/S17-무료측정.md)
+// 무료 측정 — 기록 입력 → 사용자가 먼저 구별 → 거울 대조 (명세: docs/plan/screens/S17-무료측정.md)
 // 순서가 핵심: 사용자 구별이 AI보다 먼저다 (지시서 3번 — AI가 먼저 답을 주면 훈련이 아니라 의존이 된다).
-// 조각내기는 판단 없는 문법 경계(문장 끝·쉼표)로만 — AI 힌트가 새지 않게.
+// 대조(2-7): 조각별로 [내 구별 vs 거울]을 나란히 놓고, 어긋난 조각엔 카메라 기준 한 줄 —
+// 채점·정답률 없음, 거울의 구별도 정답이 아니라 또 하나의 거울 (지시서 6단계).
+// 한도 안내는 들어올 때 미리 한다 — 구별을 다 시킨 뒤 문을 닫지 않는다.
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMessages } from "../../lib/i18n";
 import SaveMirror from "./SaveMirror";
 
 type Label = "fact" | "delusion";
-type Component = { src: string; label: "fact" | "delusion" | "unclear" };
+type MirrorItem = { src: string; user: Label; mirror: "fact" | "delusion" | "unclear"; reason: string | null };
 type MeasureResult = {
-  components: Component[];
+  items: MirrorItem[];
   factCount: number;
   delusionCount: number;
   question: string | null;
@@ -25,20 +27,42 @@ function splitFragments(text: string): string[] {
     .filter((s) => s.length > 1);
 }
 
+/** 이 기기의 오제로 비밀 열쇠 (있으면 하루 3회) */
+function ozeroKey(): string | null {
+  try {
+    return window.localStorage.getItem("ozero_key");
+  } catch {
+    return null;
+  }
+}
+
 export default function Measure() {
   const m = useMessages();
-  const LABEL_TEXT: Record<Component["label"], string> = {
+  const LABEL_TEXT: Record<MirrorItem["mirror"], string> = {
     fact: m.measure.fact,
     delusion: m.measure.delusion,
     unclear: m.measure.unclear,
   };
-  const [phase, setPhase] = useState<"write" | "distinguish" | "result">("write");
+  const [phase, setPhase] = useState<"write" | "distinguish" | "result" | "limited">("write");
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fragments, setFragments] = useState<string[]>([]);
   const [labels, setLabels] = useState<(Label | null)[]>([]);
   const [result, setResult] = useState<MeasureResult | null>(null);
+
+  useEffect(() => {
+    // 입구 사전 확인: 오늘 한도를 이미 썼으면 쓰기 전에 알려준다
+    const key = ozeroKey();
+    fetch("/api/measure", { headers: key !== null ? { "x-ozero-key": key } : {} })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { allowed?: boolean } | null) => {
+        if (d !== null && d.allowed === false) setPhase("limited");
+      })
+      .catch(() => {
+        // 확인 실패면 그냥 진행 — 최종 판정은 서버가 한다
+      });
+  }, []);
 
   function toDistinguish() {
     if (text.trim() === "") {
@@ -60,10 +84,17 @@ export default function Measure() {
     setError("");
     setLoading(true);
     try {
+      const key = ozeroKey();
       const res = await fetch("/api/measure", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text }),
+        headers: {
+          "content-type": "application/json",
+          ...(key !== null ? { "x-ozero-key": key } : {}),
+        },
+        body: JSON.stringify({
+          text,
+          fragments: fragments.map((f, i) => ({ src: f, label: labels[i] })),
+        }),
       });
       const data = (await res.json()) as MeasureResult & { error?: string };
       if (!res.ok || data.error !== undefined) {
@@ -79,6 +110,19 @@ export default function Measure() {
     }
   }
 
+  if (phase === "limited") {
+    return (
+      <main>
+        <p style={{ marginTop: "24dvh", fontSize: 17, lineHeight: 1.8 }}>{m.measure.limit}</p>
+        <div style={{ marginTop: "auto", paddingBottom: 16 }}>
+          <Link href="/" className="muted" style={{ textDecoration: "underline" }}>
+            {m.measure.backHome}
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   if (phase === "result" && result !== null) {
     const userFact = labels.filter((l) => l === "fact").length;
     const userDelusion = labels.filter((l) => l === "delusion").length;
@@ -88,21 +132,32 @@ export default function Measure() {
           {m.measure.yourSplit.replace("{f}", String(userFact)).replace("{d}", String(userDelusion))}
         </p>
         <h2 style={{ fontSize: 20, fontWeight: 600, margin: "8px 0 20px" }}>{m.measure.resultTitle}</h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {result.components.map((c, i) => (
-            <div key={i}>
-              <p style={{ margin: 0, fontSize: 16 }}>“{c.src}”</p>
-              <p
-                className="muted"
-                style={{ margin: "2px 0 0", fontSize: 13, fontWeight: c.label === "delusion" ? 600 : 400 }}
-              >
-                {LABEL_TEXT[c.label]}
-              </p>
-            </div>
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {result.items.map((c, i) => {
+            const differs = c.mirror !== c.user;
+            return (
+              <div key={i}>
+                <p style={{ margin: 0, fontSize: 16 }}>“{c.src}”</p>
+                <p className="muted" style={{ margin: "3px 0 0", fontSize: 13 }}>
+                  {m.measure.youLabel}: {c.user === "fact" ? m.measure.fact : m.measure.delusion}
+                  {" · "}
+                  <span style={{ fontWeight: differs ? 600 : 400, color: differs ? "var(--ink)" : undefined }}>
+                    {m.measure.mirrorLabel}: {LABEL_TEXT[c.mirror]}
+                  </span>
+                </p>
+                {c.reason !== null && (
+                  <p className="muted" style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.7 }}>
+                    {c.reason}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
-        <p className="font-main" style={{ fontSize: 24, fontWeight: 700, margin: "30px 0 0" }}>
-          {m.measure.ratio.replace("{f}", String(result.factCount)).replace("{d}", String(result.delusionCount))}
+        <p className="font-main" style={{ fontSize: 20, fontWeight: 700, margin: "30px 0 0" }}>
+          {m.measure.mirrorRatio
+            .replace("{f}", String(result.factCount))
+            .replace("{d}", String(result.delusionCount))}
         </p>
         {result.question !== null && (
           <p style={{ marginTop: 26, fontSize: 17, lineHeight: 1.7 }}>{result.question}</p>
@@ -111,7 +166,7 @@ export default function Measure() {
           measurement={{
             freeText: text,
             userSplit: fragments.map((f, i) => ({ src: f, label: labels[i] ?? "unclear" })),
-            aiSplit: result.components,
+            aiSplit: result.items.map((c) => ({ src: c.src, label: c.mirror })),
             question: result.question,
           }}
         />
