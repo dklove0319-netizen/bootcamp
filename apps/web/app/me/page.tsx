@@ -57,10 +57,13 @@ function NotifySwitch({ m, hourText }: { m: ReturnType<typeof useMessages>; hour
     try {
       const perm = await Notification.requestPermission();
       if (perm !== "granted") { setSt("denied"); return; }
+      const keyRes = await fetch("/api/push/subscribe");
+      const { publicKey } = (await keyRes.json()) as { publicKey?: string };
+      if (publicKey === undefined || publicKey === "") { setSt("failed"); return; }
       const reg = await navigator.serviceWorker.register("/sw.js");
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: vapidBytes(process.env.VAPID_PUBLIC_KEY ?? "") as unknown as BufferSource,
+        applicationServerKey: vapidBytes(publicKey) as unknown as BufferSource,
       });
       const key = window.localStorage.getItem(KEY);
       const res = await fetch("/api/push/subscribe", {

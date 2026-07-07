@@ -36,7 +36,9 @@ const nextConfig = {
     TOSS_CLIENT_KEY: process.env.TOSS_CLIENT_KEY ?? "",
     STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? "",
     KAKAO_MAP_APP_KEY: process.env.KAKAO_MAP_APP_KEY ?? "",
-    VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY ?? "", // 웹 푸시 공개 도장 — 공개 전제 키 (Vercel 에선 일반(비민감) 변수로)
+    // VAPID_PUBLIC_KEY 는 여기 올리지 않는다 — 이 목록은 빌드 시점에 값을 얼려 새기는데,
+    // 그 시점에 Vercel 빌드 기계가 새 변수를 못 봐서 빈값이 새겨지는 사고가 재현됨(2026-07-08, health 진단으로 확정).
+    // 대신 /api/push/subscribe(GET)에서 런타임에 읽어 브라우저에 건넨다 (ADMIN_KEY 와 같은 방식 — 이건 정상 작동 확인됨).
   },
 };
 

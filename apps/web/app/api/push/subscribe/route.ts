@@ -12,6 +12,12 @@ async function ownerOf(store: { url: string; headers: Record<string, string> }, 
   return r.ok && ((await r.json()) as unknown[]).length > 0;
 }
 
+// 공개 열쇠 전달 — 브라우저가 구독을 만들 때 필요. next.config env 목록에 올리지 않고(빌드 새김 사고 회피)
+// 요청마다 서버가 즉석에서 읽어 건넨다. 공개 전제 키라 인증 불필요.
+export async function GET(): Promise<Response> {
+  return Response.json({ publicKey: process.env.VAPID_PUBLIC_KEY ?? "" });
+}
+
 export async function POST(req: Request): Promise<Response> {
   const store = serviceStore();
   if (store === null) return Response.json({ error: "unavailable" }, { status: 503 });
