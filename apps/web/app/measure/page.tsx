@@ -1,31 +1,22 @@
-// 무료 측정 — 기록 입력 → 사용자가 먼저 구별 → 거울 대조 (명세: docs/plan/screens/S17-무료측정.md)
-// 순서가 핵심: 사용자 구별이 AI보다 먼저다 (지시서 3번 — AI가 먼저 답을 주면 훈련이 아니라 의존이 된다).
-// 대조(2-7): 조각별로 [내 구별 vs 거울]을 나란히 놓고, 어긋난 조각엔 카메라 기준 한 줄 —
-// 채점·정답률 없음, 거울의 구별도 정답이 아니라 또 하나의 거울 (지시서 6단계).
-// 한도 안내는 들어올 때 미리 한다 — 구별을 다 시킨 뒤 문을 닫지 않는다.
+// 무료 측정 — 오늘의 기록 전부 쓰기 → (같은 화면 스크롤) 기준 안내 → 사실만 다시 쓰기 → 거울 검증
+// (스텝 2-8 · 명세: docs/plan/screens/S17-무료측정.md · 자세규정 8장 사실 검증 모듈의 화면화)
+// 훈련의 핵심 장면: "이건 사실인가 해석인가"를 참가자의 실제 문장 위에서, 스스로 다시 쓰며 반복한다.
+// 거울은 사실 칸의 오염만 짚는다 — 깨끗하면 칭찬 없이 조용히 통과 (자세규정 8-6).
+// 한도 안내는 들어올 때 미리 한다 — 쓰기를 다 시킨 뒤 문을 닫지 않는다.
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMessages } from "../../lib/i18n";
 import SaveMirror from "./SaveMirror";
 
-type Label = "fact" | "delusion";
-type MirrorItem = { src: string; user: Label; mirror: "fact" | "delusion" | "unclear"; reason: string | null };
+type MirrorItem = { src: string; label: "fact" | "delusion" | "unclear"; reason: string | null };
 type MeasureResult = {
   items: MirrorItem[];
   factCount: number;
   delusionCount: number;
+  clean: boolean;
   question: string | null;
 };
-
-/** 판단 없는 기계적 조각내기: 문장 끝(.!?…)과 줄바꿈, 쉼표 경계로만 자른다 */
-function splitFragments(text: string): string[] {
-  return text
-    .split(/(?<=[.!?…])\s+|\n+/)
-    .flatMap((s) => s.split(/,\s*/))
-    .map((s) => s.trim())
-    .filter((s) => s.length > 1);
-}
 
 /** 이 기기의 오제로 비밀 열쇠 (있으면 하루 3회) */
 function ozeroKey(): string | null {
@@ -36,19 +27,31 @@ function ozeroKey(): string | null {
   }
 }
 
+const boxStyle: React.CSSProperties = {
+  width: "100%",
+  padding: 12,
+  background: "#fffdf8",
+  color: "var(--ink)",
+  border: "1px solid #e3d9c8",
+  borderRadius: 8,
+  fontSize: 16,
+  fontFamily: "inherit",
+  lineHeight: 1.6,
+  resize: "vertical",
+};
+
 export default function Measure() {
   const m = useMessages();
-  const LABEL_TEXT: Record<MirrorItem["mirror"], string> = {
+  const LABEL_TEXT: Record<MirrorItem["label"], string> = {
     fact: m.measure.fact,
     delusion: m.measure.delusion,
     unclear: m.measure.unclear,
   };
-  const [phase, setPhase] = useState<"write" | "distinguish" | "result" | "limited">("write");
+  const [phase, setPhase] = useState<"compose" | "result" | "limited">("compose");
   const [text, setText] = useState("");
+  const [facts, setFacts] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [fragments, setFragments] = useState<string[]>([]);
-  const [labels, setLabels] = useState<(Label | null)[]>([]);
   const [result, setResult] = useState<MeasureResult | null>(null);
 
   useEffect(() => {
@@ -64,21 +67,13 @@ export default function Measure() {
       });
   }, []);
 
-  function toDistinguish() {
+  async function toMirror() {
     if (text.trim() === "") {
       setError(m.measure.empty);
       return;
     }
-    setError("");
-    const frags = splitFragments(text);
-    setFragments(frags);
-    setLabels(frags.map(() => null));
-    setPhase("distinguish");
-  }
-
-  async function toMirror() {
-    if (labels.some((l) => l === null)) {
-      setError(m.measure.tagAll);
+    if (facts.trim() === "") {
+      setError(m.measure.factsEmpty);
       return;
     }
     setError("");
@@ -91,10 +86,7 @@ export default function Measure() {
           "content-type": "application/json",
           ...(key !== null ? { "x-ozero-key": key } : {}),
         },
-        body: JSON.stringify({
-          text,
-          fragments: fragments.map((f, i) => ({ src: f, label: labels[i] })),
-        }),
+        body: JSON.stringify({ text, facts }),
       });
       const data = (await res.json()) as MeasureResult & { error?: string };
       if (!res.ok || data.error !== undefined) {
@@ -124,26 +116,28 @@ export default function Measure() {
   }
 
   if (phase === "result" && result !== null) {
-    const userFact = labels.filter((l) => l === "fact").length;
-    const userDelusion = labels.filter((l) => l === "delusion").length;
     return (
       <main>
-        <p className="muted" style={{ margin: "32px 0 0", fontSize: 15 }}>
-          {m.measure.yourSplit.replace("{f}", String(userFact)).replace("{d}", String(userDelusion))}
-        </p>
-        <h2 style={{ fontSize: 20, fontWeight: 600, margin: "8px 0 20px" }}>{m.measure.resultTitle}</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 600, margin: "32px 0 20px" }}>{m.measure.resultTitle}</h2>
+        {result.clean && (
+          <p className="muted" style={{ margin: "0 0 18px", fontSize: 15 }}>{m.measure.clean}</p>
+        )}
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           {result.items.map((c, i) => {
-            const differs = c.mirror !== c.user;
+            const flagged = c.label !== "fact";
             return (
               <div key={i}>
                 <p style={{ margin: 0, fontSize: 16 }}>“{c.src}”</p>
-                <p className="muted" style={{ margin: "3px 0 0", fontSize: 13 }}>
-                  {m.measure.youLabel}: {c.user === "fact" ? m.measure.fact : m.measure.delusion}
-                  {" · "}
-                  <span style={{ fontWeight: differs ? 600 : 400, color: differs ? "var(--ink)" : undefined }}>
-                    {m.measure.mirrorLabel}: {LABEL_TEXT[c.mirror]}
-                  </span>
+                <p
+                  className="muted"
+                  style={{
+                    margin: "3px 0 0",
+                    fontSize: 13,
+                    fontWeight: flagged ? 600 : 400,
+                    color: flagged ? "var(--ink)" : undefined,
+                  }}
+                >
+                  {LABEL_TEXT[c.label]}
                 </p>
                 {c.reason !== null && (
                   <p className="muted" style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.7 }}>
@@ -165,8 +159,8 @@ export default function Measure() {
         <SaveMirror
           measurement={{
             freeText: text,
-            userSplit: fragments.map((f, i) => ({ src: f, label: labels[i] ?? "unclear" })),
-            aiSplit: result.items.map((c) => ({ src: c.src, label: c.mirror })),
+            userSplit: [{ src: facts, label: "facts" }],
+            aiSplit: result.items.map((c) => ({ src: c.src, label: c.label })),
             question: result.question,
           }}
         />
@@ -176,9 +170,10 @@ export default function Measure() {
             className="muted"
             style={{ background: "none", border: "none", textDecoration: "underline", cursor: "pointer", fontSize: 14, fontFamily: "inherit" }}
             onClick={() => {
-              setPhase("write");
+              setPhase("compose");
               setResult(null);
               setText("");
+              setFacts("");
             }}
           >
             {m.measure.again}
@@ -193,62 +188,6 @@ export default function Measure() {
     );
   }
 
-  if (phase === "distinguish") {
-    return (
-      <main>
-        <h2 style={{ fontSize: 20, fontWeight: 600, margin: "28px 0 12px" }}>{m.measure.distinguishTitle}</h2>
-        <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.8 }}>
-          {m.measure.factDef}
-        </p>
-        <p className="muted" style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.8 }}>
-          {m.measure.delusionDef}
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 24 }}>
-          {fragments.map((frag, i) => (
-            <div key={i}>
-              <p style={{ margin: 0, fontSize: 16 }}>“{frag}”</p>
-              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 6 }}>
-                {(["fact", "delusion"] as Label[]).map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    onClick={() => {
-                      setLabels((prev) => {
-                        const next = [...prev];
-                        next[i] = l;
-                        return next;
-                      });
-                    }}
-                    style={{
-                      padding: "6px 18px",
-                      borderRadius: 999,
-                      fontSize: 14,
-                      fontFamily: "var(--font-main)",
-                      cursor: "pointer",
-                      border: "1px solid " + (labels[i] === l ? "var(--ink)" : "#d9d2c4"),
-                      background: labels[i] === l ? "var(--ink)" : "transparent",
-                      color: labels[i] === l ? "var(--bg)" : "var(--muted)",
-                    }}
-                  >
-                    {l === "fact" ? m.measure.fact : m.measure.delusion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        {error !== "" && (
-          <p style={{ color: "#a05b3f", fontSize: 14, margin: "12px 0 0" }}>{error}</p>
-        )}
-        <div style={{ marginTop: "auto", paddingTop: 20, paddingBottom: 16 }}>
-          <button type="button" className="btn" onClick={toMirror} disabled={loading}>
-            {loading ? m.measure.loading : m.measure.toMirror}
-          </button>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main>
       <div className="muted" style={{ marginTop: 24, lineHeight: 1.8 }}>
@@ -257,30 +196,22 @@ export default function Measure() {
         <p style={{ margin: 0 }}>{m.measure.guide3}</p>
         <p style={{ margin: 0 }}>{m.measure.guide4}</p>
       </div>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={10}
-        style={{
-          marginTop: 16,
-          width: "100%",
-          padding: 12,
-          background: "#fffdf8",
-          color: "var(--ink)",
-          border: "1px solid #e3d9c8",
-          borderRadius: 8,
-          fontSize: 16,
-          fontFamily: "inherit",
-          lineHeight: 1.6,
-          resize: "vertical"
-        }}
-      />
+      <textarea value={text} onChange={(e) => setText(e.target.value)} rows={9} style={{ ...boxStyle, marginTop: 16 }} />
+
+      <h2 style={{ fontSize: 19, fontWeight: 600, margin: "34px 0 10px" }}>{m.measure.factsTitle}</h2>
+      <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.8 }}>{m.measure.factDef}</p>
+      <p className="muted" style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.8 }}>{m.measure.delusionDef}</p>
+      <p className="muted" style={{ margin: "12px 0 0", fontSize: 13, lineHeight: 1.8 }}>{m.measure.example1}</p>
+      <p className="muted" style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.8 }}>{m.measure.example2}</p>
+      <p style={{ margin: "16px 0 0", fontSize: 15, lineHeight: 1.8 }}>{m.measure.factsGuide}</p>
+      <textarea value={facts} onChange={(e) => setFacts(e.target.value)} rows={6} style={{ ...boxStyle, marginTop: 10 }} />
+
       {error !== "" && (
-        <p style={{ color: "#a05b3f", fontSize: 14, margin: "8px 0 0" }}>{error}</p>
+        <p style={{ color: "#a05b3f", fontSize: 14, margin: "10px 0 0" }}>{error}</p>
       )}
-      <div style={{ marginTop: "auto", paddingTop: 16, paddingBottom: 16 }}>
-        <button type="button" className="btn" onClick={toDistinguish}>
-          {m.measure.submit}
+      <div style={{ marginTop: "auto", paddingTop: 20, paddingBottom: 16 }}>
+        <button type="button" className="btn" onClick={toMirror} disabled={loading}>
+          {loading ? m.measure.loading : m.measure.toMirror}
         </button>
       </div>
     </main>
