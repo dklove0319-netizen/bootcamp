@@ -24,11 +24,14 @@ function shapeOf(v: string | undefined): Shape {
 
 export async function GET(): Promise<Response> {
   return Response.json({
-    build: "v5-빌드새김제거", // 어느 배포가 응답 중인지 식별용
+    build: "v6-웹푸시진단", // 어느 배포가 응답 중인지 식별용
 
     SUPABASE_URL: shapeOf(process.env.SUPABASE_URL),
     SUPABASE_ANON_KEY: shapeOf(process.env.SUPABASE_ANON_KEY),
     SUPABASE_SERVICE_ROLE_KEY: shapeOf(process.env.SUPABASE_SERVICE_ROLE_KEY),
     ANTHROPIC_API_KEY: shapeOf(process.env.ANTHROPIC_API_KEY),
+    ADMIN_KEY: shapeOf(process.env.ADMIN_KEY),
+    VAPID_PUBLIC_KEY: shapeOf(process.env.VAPID_PUBLIC_KEY),
+    VAPID_PRIVATE_KEY: shapeOf(process.env.VAPID_PRIVATE_KEY),
   });
 }
