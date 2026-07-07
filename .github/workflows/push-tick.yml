@@ -1,0 +1,11 @@
+name: push-tick
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: knock
+        run: curl -s -X POST https://ozero-mirror.vercel.app/api/push/tick
