@@ -246,7 +246,10 @@ export default function Measure() {
           )}
         </div>
       )}
-      <div className="muted" style={{ marginTop: 24, lineHeight: 1.8, whiteSpace: "pre-line" }}>
+      <p style={{ marginTop: 24, fontSize: 16, lineHeight: 1.8, whiteSpace: "pre-line" }}>
+        {m.measure.guide0}
+      </p>
+      <div className="muted" style={{ marginTop: 18, lineHeight: 1.8, whiteSpace: "pre-line" }}>
         <p style={{ margin: 0 }}>{m.measure.guide1}</p>
         <p style={{ margin: "14px 0 0" }}>{m.measure.guide2}</p>
         <p style={{ margin: "14px 0 0" }}>{m.measure.guide3}</p>
