@@ -246,30 +246,38 @@ export default function Measure() {
           )}
         </div>
       )}
-      <div className="muted" style={{ marginTop: 24, lineHeight: 1.8 }}>
+      <div className="muted" style={{ marginTop: 24, lineHeight: 1.8, whiteSpace: "pre-line" }}>
         <p style={{ margin: 0 }}>{m.measure.guide1}</p>
-        <p style={{ margin: 0 }}>{m.measure.guide2}</p>
-        <p style={{ margin: 0 }}>{m.measure.guide3}</p>
-        <p style={{ margin: 0 }}>{m.measure.guide4}</p>
+        <p style={{ margin: "14px 0 0" }}>{m.measure.guide2}</p>
+        <p style={{ margin: "14px 0 0" }}>{m.measure.guide3}</p>
+        <p style={{ margin: "14px 0 0" }}>{m.measure.guide4}</p>
       </div>
       <textarea value={text} onChange={(e) => setText(e.target.value)} rows={9} style={{ ...boxStyle, marginTop: 16 }} />
 
-      <h2 style={{ fontSize: 19, fontWeight: 600, margin: "34px 0 10px" }}>{m.measure.factsTitle}</h2>
-      <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.8 }}>{m.measure.factDef}</p>
-      <p className="muted" style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.8 }}>{m.measure.delusionDef}</p>
-      <p className="muted" style={{ margin: "12px 0 0", fontSize: 13, lineHeight: 1.8 }}>{m.measure.example1}</p>
-      <p className="muted" style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.8 }}>{m.measure.example2}</p>
+      <h2
+        style={{
+          fontWeight: 600,
+          margin: "34px 0 10px",
+          whiteSpace: "nowrap",
+          fontSize: "min(14px, calc((100vw - 40px) / 25.5))",
+        }}
+      >
+        {m.measure.factsTitle}
+      </h2>
+      <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.8, whiteSpace: "pre-line" }}>{m.measure.factDef}</p>
+      <p className="muted" style={{ margin: "14px 0 0", fontSize: 14, lineHeight: 1.8, whiteSpace: "pre-line" }}>{m.measure.delusionDef}</p>
+      <p className="muted" style={{ margin: "14px 0 0", fontSize: 13, lineHeight: 1.8, whiteSpace: "pre-line" }}>{m.measure.example1}</p>
+      <p className="muted" style={{ margin: "10px 0 0", fontSize: 13, lineHeight: 1.8, whiteSpace: "pre-line" }}>{m.measure.example2}</p>
 
-      <p style={{ margin: "22px 0 2px", fontSize: 16, fontWeight: 600 }}>{m.measure.factsLabel}</p>
-      <p className="muted" style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.7 }}>{m.measure.factsHelp}</p>
+      <p style={{ margin: "22px 0 8px", fontSize: 16, fontWeight: 600 }}>{m.measure.factsLabel}</p>
       <textarea value={facts} onChange={(e) => setFacts(e.target.value)} rows={5} style={boxStyle} />
 
       <p style={{ margin: "22px 0 2px", fontSize: 16, fontWeight: 600 }}>{m.measure.feelingsLabel}</p>
-      <p className="muted" style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.7 }}>{m.measure.feelingsHelp}</p>
+      <p className="muted" style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.8, whiteSpace: "pre-line" }}>{m.measure.feelingsHelp}</p>
       <textarea value={feelings} onChange={(e) => setFeelings(e.target.value)} rows={3} style={boxStyle} />
 
       <p style={{ margin: "22px 0 2px", fontSize: 16, fontWeight: 600 }}>{m.measure.actionsLabel}</p>
-      <p className="muted" style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.7 }}>{m.measure.actionsHelp}</p>
+      <p className="muted" style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.8, whiteSpace: "pre-line" }}>{m.measure.actionsHelp}</p>
       <textarea value={actions} onChange={(e) => setActions(e.target.value)} rows={3} style={boxStyle} />
 
       {error !== "" && (
