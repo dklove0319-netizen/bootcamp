@@ -221,3 +221,8 @@
 - 왜: 사용자 지시("푸시기능 만들어") — 재회 약속("내일 그 시간에 돌아온다")을 지키는 노크 소리가 없었음. 이메일 채널은 RESEND_API_KEY 가 견본 값이라 사용자 계정 생성 대기
 - 버린 대안: Vercel Cron — 무료 요금제는 하루 1회 제한이라 시각별 발송 불가 → GitHub Actions 매시 정각 / 발송기 인증 — 기록창 날짜당 1회 멱등이라 무인증이어도 중복·남용 무해(비밀 관리 1개 감소) / 아이폰 네이티브 앱 — 웹 푸시는 iOS 16.4+ 홈 화면 추가(PWA)로 수신 가능, 명함(manifest) 추가
 - 영향: push_subs 표(block8.sql — 사용자 실행 대기, 3-1용 email 칸 포함), sw.js 안테나, /api/push/subscribe·tick, /me 알림 스위치+아이폰 안내, VAPID 열쇠(.env + Vercel 등록 대기), .github/workflows/push-tick.yml. 실기기 수신 검증은 사용자 폰에서 (환경 제약으로 로컬 GUI 불가)
+
+## [2026-07-08] Vercel 열쇠 자동 등록 근본 사고 재발 + 수정 — VAPID_PUBLIC_KEY 도 next.config 빌드 새김에 당함
+- 왜: 사용자가 발급한 새 팀 범위 토큰으로 ADMIN_KEY·VAPID 3종을 API로 등록·재배포했으나 VAPID_PUBLIC_KEY만 계속 빈값. health 진단(v6) 실측으로 원인 확정 — next.config env 목록(빌드 시점 새김)에 있는 값만 실패, 목록 밖(런타임 읽기)인 ADMIN_KEY·VAPID_PRIVATE_KEY는 정상. 2026-07-06 SUPABASE_URL/ANON_KEY 사고와 동일 패턴 재확인
+- 버린 대안: VAPID_PUBLIC_KEY를 next.config 목록에 그대로 두고 재배포만 반복 — 3차 재배포(2회 API 재배포 + 1회 진짜 git push)까지 전부 실패해 목록 자체가 원인임을 확정 후 폐기
+- 영향: VAPID_PUBLIC_KEY를 next.config env 목록에서 제거, /api/push/subscribe(GET)로 런타임 전달하도록 변경(ADMIN_KEY와 같은 안전한 패턴), Vercel 재등록(encrypted 타입). health 진단에 웹 푸시 열쇠 3종 모양 확인 추가(v6). 라이브 실측: 열쇠 7종 전부 "있음", /api/admin 200(관찰자 8명)·404 게이트 정상, /api/push/tick 이 vapid-missing 통과 후 table-missing(=block8.sql 대기)까지 도달
