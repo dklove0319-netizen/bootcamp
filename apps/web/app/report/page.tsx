@@ -12,6 +12,10 @@ type Report = {
   emotionCounts?: { label: string; count: number }[];
   topWords?: { word: string; count: number }[];
   repeatedDelusions?: { src: string; days: number }[];
+  moodDays?: {
+    low: { dayNo: number; date: string; score: number; text: string } | null;
+    high: { dayNo: number; date: string; score: number; text: string } | null;
+  };
   answers?: { dayNo: number; date: string | null; answer: string | null }[];
   links?: { delusion: string; emotion: string }[];
   who5?: { day0: number | null; day21: number };
@@ -21,9 +25,9 @@ type Report = {
   };
 };
 
-// 눈금 점 그래프 — 가로 = 1~21일, 세로 = 0~10. 기록 없는 날은 빈 자리(선도 끊김).
-function Sparkline({ label, values, len }: { label: string; values: (number | null)[]; len: number }) {
-  const W = 340, H = 72, padX = 8, padY = 8;
+// 눈금 점 그래프 — 가로 = 1~21일, 세로 = 0~10. 기록 없는 날은 빈 자리(선도 끊김). 점 위 숫자 = 그날 점수.
+function Sparkline({ label, values, len, note }: { label: string; values: (number | null)[]; len: number; note?: string }) {
+  const W = 340, H = 80, padX = 8, padY = 12;
   const x = (i: number) => padX + (i * (W - 2 * padX)) / Math.max(1, len - 1);
   const y = (v: number) => H - padY - (v * (H - 2 * padY)) / 10;
   // 이어진 구간만 선으로 (빈 날에서 끊는다)
@@ -51,12 +55,20 @@ function Sparkline({ label, values, len }: { label: string; values: (number | nu
         {values.map((v, i) =>
           v === null ? null : <circle key={i} cx={x(i)} cy={y(v)} r="2.6" fill="var(--ink)" />
         )}
+        {values.map((v, i) =>
+          v === null ? null : (
+            <text key={"t" + i} x={x(i)} y={y(v) - 5} textAnchor="middle" fontSize="8" fill="#8a7f6d">{v}</text>
+          )
+        )}
       </svg>
       <div style={{ display: "flex", justifyContent: "space-between", padding: `0 ${padX}px` }}>
         {[1, 7, 14, len].map((d) => (
           <span key={d} className="muted" style={{ fontSize: 10 }}>{d}</span>
         ))}
       </div>
+      {note !== undefined && note !== "" && (
+        <p className="muted" style={{ fontSize: 11, margin: "2px 0 0", textAlign: "left" }}>{note}</p>
+      )}
     </div>
   );
 }
@@ -177,13 +189,53 @@ export default function ReportPage() {
           }
           return out;
         };
+        // 그래프 아래 한 줄 — 평균 · 가장 높음 · 가장 낮음 (같은 점수가 여러 날이면 첫날 + 외 n일)
+        const stats = (vals: (number | null)[]) => {
+          const pts = vals.map((v, i) => ({ v, d: i + 1 })).filter((p): p is { v: number; d: number } => p.v !== null);
+          if (pts.length === 0) return "";
+          const avg = (pts.reduce((s, p) => s + p.v, 0) / pts.length).toFixed(1);
+          const fmt = (target: number) => {
+            const ds = pts.filter((p) => p.v === target).map((p) => p.d);
+            const more = ds.length > 1 ? m.report.statMore.replace("{n}", String(ds.length - 1)) : "";
+            return m.report.statDay.replace("{v}", String(target)).replace("{d}", String(ds[0])).replace("{more}", more);
+          };
+          const hv = Math.max(...pts.map((p) => p.v));
+          const lv = Math.min(...pts.map((p) => p.v));
+          return `${m.report.statAvg} ${avg} · ${m.report.statHigh} ${fmt(hv)} · ${m.report.statLow} ${fmt(lv)}`;
+        };
+        const mood = arr((sc) => sc.mood);
+        const emotion = arr((sc) => sc.emotion);
+        const energy = arr((sc) => sc.energy);
+        const sleep = arr((sc) => sc.sleep);
         return (
           <>
-            <Sparkline label={m.loop.scaleMoodShort} values={arr((sc) => sc.mood)} len={LEN} />
-            <Sparkline label={m.loop.scaleEmotionShort} values={arr((sc) => sc.emotion)} len={LEN} />
-            <Sparkline label={m.loop.scaleEnergyShort} values={arr((sc) => sc.energy)} len={LEN} />
-            <Sparkline label={m.loop.scaleSleepShort} values={arr((sc) => sc.sleep)} len={LEN} />
+            <Sparkline label={m.loop.scaleMoodShort} values={mood} len={LEN} note={stats(mood)} />
+            <Sparkline label={m.loop.scaleEmotionShort} values={emotion} len={LEN} note={stats(emotion)} />
+            <Sparkline label={m.loop.scaleEnergyShort} values={energy} len={LEN} note={stats(energy)} />
+            <Sparkline label={m.loop.scaleSleepShort} values={sleep} len={LEN} note={stats(sleep)} />
           </>
+        );
+      })()}
+
+      {(() => {
+        // 눈금 대조 — 숫자는 그날의 기록과 나란히 놓을 때만 읽힌다 (사용자 지시 2026-07-08)
+        const lowD = r.moodDays?.low ?? null;
+        const highD = r.moodDays?.high ?? null;
+        if (lowD === null && highD === null) return null;
+        return (
+          <div style={{ marginTop: 18 }}>
+            <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "0 0 10px" }}>{m.report.scaleDaysHelp}</p>
+            {[{ d: lowD, t: m.report.scaleLowDay }, { d: highD, t: m.report.scaleHighDay }].map((x, i) =>
+              x.d === null ? null : (
+                <div key={i} style={{ marginBottom: 12 }}>
+                  <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+                    {m.report.scaleDayLine.replace("{t}", x.t).replace("{d}", String(x.d.dayNo)).replace("{date}", x.d.date).replace("{v}", String(x.d.score))}
+                  </p>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, margin: "3px 0 0" }}>“{x.d.text}”</p>
+                </div>
+              )
+            )}
+          </div>
         );
       })()}
 

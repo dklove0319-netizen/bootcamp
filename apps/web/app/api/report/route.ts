@@ -106,6 +106,22 @@ export async function GET(req: Request): Promise<Response> {
       ? { dayNo: n, date: e.entry_date as string, answer: e.answer_text as string }
       : { dayNo: n, date: null, answer: null };
   };
+  // 눈금 대조 — 기분이 가장 낮았던 날·높았던 날의 원문 (숫자는 그날의 기록과 나란히 놓을 때만 읽힌다 — 사용자 지시 2026-07-08)
+  const moodScored = submitted.filter(
+    (e) => typeof e.score_mood === "number" && typeof e.free_text === "string" && e.free_text !== ""
+  );
+  const pickDay = (e: Record<string, unknown>) => ({
+    dayNo: e.day_no as number,
+    date: e.entry_date as string,
+    score: e.score_mood as number,
+    text: (e.free_text as string).slice(0, 300),
+  });
+  let moodDays: { low: ReturnType<typeof pickDay> | null; high: ReturnType<typeof pickDay> | null } = { low: null, high: null };
+  if (moodScored.length > 0) {
+    const low = moodScored.reduce((a, b) => ((b.score_mood as number) < (a.score_mood as number) ? b : a));
+    const high = moodScored.reduce((a, b) => ((b.score_mood as number) > (a.score_mood as number) ? b : a));
+    moodDays = { low: pickDay(low), high: high === low ? null : pickDay(high) };
+  }
   const links: { delusion: string; emotion: string }[] = [];
   for (const e of submitted) {
     const ls = e.delusion_emotion_links;
@@ -186,6 +202,7 @@ export async function GET(req: Request): Promise<Response> {
     emotionCounts: [...emotionCounts.entries()].sort((a, b) => b[1] - a[1]).map(([label, count]) => ({ label, count })),
     topWords: topWords(texts, 5),
     repeatedDelusions,
+    moodDays,
     answers: [answersAt(1), answersAt(7), answersAt(14), answersAt(21)],
     links,
     who5: { day0: day0 === null ? null : day0.total_score, day21: day21.total_score },
