@@ -56,7 +56,7 @@ export async function GET(req: Request): Promise<Response> {
 
   // 21일치 전 필드 한 번에 (N+1 금지)
   const er = await fetch(
-    `${store.url}/rest/v1/daily_entries?user_id=eq.${secret}&journey_id=eq.${journey.id}&deleted_at=is.null&order=day_no.asc&select=entry_date,day_no,free_text,score_mood,score_emotion,score_energy,score_sleep,emotion_label,delusion_emotion_links,answer_text,action_text,action_result,submitted_at`,
+    `${store.url}/rest/v1/daily_entries?user_id=eq.${secret}&journey_id=eq.${journey.id}&deleted_at=is.null&order=day_no.asc&select=entry_date,day_no,free_text,score_mood,score_emotion,score_energy,score_sleep,emotion_label,delusion_emotion_links,ai_split,answer_text,action_text,action_result,submitted_at`,
     { headers: store.headers, cache: "no-store" }
   );
   const entries = er.ok ? ((await er.json()) as Record<string, unknown>[]) : [];
@@ -81,6 +81,25 @@ export async function GET(req: Request): Promise<Response> {
     if (typeof label === "string" && label !== "") emotionCounts.set(label, (emotionCounts.get(label) ?? 0) + 1);
   }
   const texts = submitted.map((e) => (typeof e.free_text === "string" ? e.free_text : "")).filter((t) => t !== "");
+
+  // 여러 날 돌아온 해석 — 거울이 가른 망상 조각이 서로 다른 날짜에 몇 번 나왔는지 (원문 그대로, 2일 이상만)
+  const delusionDays = new Map<string, Set<string>>();
+  for (const e of submitted) {
+    const split = e.ai_split;
+    if (!Array.isArray(split)) continue;
+    for (const c of split as { src?: string; label?: string }[]) {
+      if (c.label === "delusion" && typeof c.src === "string" && c.src.trim() !== "") {
+        const key = c.src.trim();
+        if (!delusionDays.has(key)) delusionDays.set(key, new Set());
+        delusionDays.get(key)!.add(e.entry_date as string);
+      }
+    }
+  }
+  const repeatedDelusions = [...delusionDays.entries()]
+    .map(([src, days]) => ({ src, days: days.size }))
+    .filter((x) => x.days >= 2)
+    .sort((a, b) => b.days - a.days)
+    .slice(0, 5);
   const answersAt = (n: number) => {
     const e = entries.find((x) => x.day_no === n);
     return e !== undefined && typeof e.answer_text === "string" && e.answer_text !== ""
@@ -166,6 +185,7 @@ export async function GET(req: Request): Promise<Response> {
     })),
     emotionCounts: [...emotionCounts.entries()].sort((a, b) => b[1] - a[1]).map(([label, count]) => ({ label, count })),
     topWords: topWords(texts, 5),
+    repeatedDelusions,
     answers: [answersAt(1), answersAt(7), answersAt(14), answersAt(21)],
     links,
     who5: { day0: day0 === null ? null : day0.total_score, day21: day21.total_score },

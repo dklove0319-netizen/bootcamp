@@ -11,6 +11,7 @@ type Report = {
   scales?: { dayNo: number; date: string; mood: number; emotion: number; energy: number; sleep: number; emotionLabel: string | null }[];
   emotionCounts?: { label: string; count: number }[];
   topWords?: { word: string; count: number }[];
+  repeatedDelusions?: { src: string; days: number }[];
   answers?: { dayNo: number; date: string | null; answer: string | null }[];
   links?: { delusion: string; emotion: string }[];
   who5?: { day0: number | null; day21: number };
@@ -19,6 +20,46 @@ type Report = {
     reflection?: string | null; evidence?: { date: string; src: string }[];
   };
 };
+
+// 눈금 점 그래프 — 가로 = 1~21일, 세로 = 0~10. 기록 없는 날은 빈 자리(선도 끊김).
+function Sparkline({ label, values, len }: { label: string; values: (number | null)[]; len: number }) {
+  const W = 340, H = 72, padX = 8, padY = 8;
+  const x = (i: number) => padX + (i * (W - 2 * padX)) / Math.max(1, len - 1);
+  const y = (v: number) => H - padY - (v * (H - 2 * padY)) / 10;
+  // 이어진 구간만 선으로 (빈 날에서 끊는다)
+  const segs: string[] = [];
+  let cur: string[] = [];
+  values.forEach((v, i) => {
+    if (v === null) {
+      if (cur.length > 1) segs.push("M" + cur.join(" L"));
+      cur = [];
+    } else {
+      cur.push(`${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+    }
+  });
+  if (cur.length > 1) segs.push("M" + cur.join(" L"));
+  return (
+    <div style={{ marginTop: 14 }}>
+      <p className="muted" style={{ fontSize: 12, margin: "0 0 2px", textAlign: "left" }}>{label}</p>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", display: "block" }} role="img" aria-label={label}>
+        <line x1={padX} y1={y(0)} x2={W - padX} y2={y(0)} stroke="#e3d9c8" strokeWidth="1" />
+        <line x1={padX} y1={y(5)} x2={W - padX} y2={y(5)} stroke="#efe8db" strokeWidth="1" />
+        <line x1={padX} y1={y(10)} x2={W - padX} y2={y(10)} stroke="#efe8db" strokeWidth="1" />
+        {segs.map((d, i) => (
+          <path key={i} d={d} fill="none" stroke="#b7a68d" strokeWidth="1.2" />
+        ))}
+        {values.map((v, i) =>
+          v === null ? null : <circle key={i} cx={x(i)} cy={y(v)} r="2.6" fill="var(--ink)" />
+        )}
+      </svg>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: `0 ${padX}px` }}>
+        {[1, 7, 14, len].map((d) => (
+          <span key={d} className="muted" style={{ fontSize: 10 }}>{d}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function ozeroKey(): string | null {
   try { return window.localStorage.getItem("ozero_key"); } catch { return null; }
@@ -125,37 +166,46 @@ export default function ReportPage() {
         {m.report.recorded.replace("{n}", String(r.recordedDays ?? 0)).replace("{miss}", String(r.missingDays ?? 0))}
       </p>
 
-      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 8px" }}>{m.report.scalesTitle}</h2>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ margin: "0 auto", fontSize: 12, borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              {[m.report.colDay, m.loop.scaleMoodShort, m.loop.scaleEmotionShort, m.loop.scaleEnergyShort, m.loop.scaleSleepShort].map((h) => (
-                <th key={h} style={{ padding: "3px 8px", borderBottom: "1px solid #e3d9c8", fontWeight: 600 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {(r.scales ?? []).map((s) => (
-              <tr key={s.dayNo}>
-                <td style={{ padding: "2px 8px" }}>{s.dayNo}</td>
-                <td style={{ padding: "2px 8px" }}>{s.mood}</td>
-                <td style={{ padding: "2px 8px" }}>{s.emotion}</td>
-                <td style={{ padding: "2px 8px" }}>{s.energy}</td>
-                <td style={{ padding: "2px 8px" }}>{s.sleep}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 4px" }}>{m.report.scalesTitle}</h2>
+      <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "0 0 4px" }}>{m.report.scalesHelp}</p>
+      {(() => {
+        const LEN = 21;
+        const arr = (pick: (s: NonNullable<Report["scales"]>[number]) => number) => {
+          const out: (number | null)[] = Array.from({ length: LEN }, () => null);
+          for (const sc of r.scales ?? []) {
+            if (sc.dayNo >= 1 && sc.dayNo <= LEN) out[sc.dayNo - 1] = pick(sc);
+          }
+          return out;
+        };
+        return (
+          <>
+            <Sparkline label={m.loop.scaleMoodShort} values={arr((sc) => sc.mood)} len={LEN} />
+            <Sparkline label={m.loop.scaleEmotionShort} values={arr((sc) => sc.emotion)} len={LEN} />
+            <Sparkline label={m.loop.scaleEnergyShort} values={arr((sc) => sc.energy)} len={LEN} />
+            <Sparkline label={m.loop.scaleSleepShort} values={arr((sc) => sc.sleep)} len={LEN} />
+          </>
+        );
+      })()}
 
-      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 8px" }}>{m.report.freqTitle}</h2>
-      <p className="muted" style={{ fontSize: 14, lineHeight: 1.8, margin: 0 }}>
+      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 4px" }}>{m.report.emotionTitle}</h2>
+      <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "0 0 6px" }}>{m.report.emotionHelp}</p>
+      <p style={{ fontSize: 15, lineHeight: 1.8, margin: 0 }}>
         {(r.emotionCounts ?? []).map((e) => `${e.label} ${e.count}`).join(" · ") || m.report.none}
       </p>
-      <p className="muted" style={{ fontSize: 14, lineHeight: 1.8, margin: "6px 0 0" }}>
-        {(r.topWords ?? []).map((w) => `'${w.word}' ${w.count}`).join(" · ") || m.report.none}
-      </p>
+
+      <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 4px" }}>{m.report.repeatsTitle}</h2>
+      <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "0 0 8px" }}>{m.report.repeatsHelp}</p>
+      {(r.repeatedDelusions ?? []).length === 0 ? (
+        <p className="muted" style={{ fontSize: 14 }}>{m.report.repeatsNone}</p>
+      ) : (
+        <div>
+          {(r.repeatedDelusions ?? []).map((d, i) => (
+            <p key={i} style={{ fontSize: 15, lineHeight: 1.8, margin: "4px 0" }}>
+              “{d.src}” <span className="muted" style={{ fontSize: 13 }}>— {m.report.repeatsDays.replace("{n}", String(d.days))}</span>
+            </p>
+          ))}
+        </div>
+      )}
 
       <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 8px" }}>{m.report.answersTitle}</h2>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

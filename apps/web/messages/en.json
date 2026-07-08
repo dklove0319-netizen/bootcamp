@@ -190,7 +190,14 @@
     "linksTitle": "The delusions and emotions you connected",
     "who5Title": "Starting point and day 21 (WHO-5)",
     "who5Line": "Start {d0} · Day 21 {d21} (out of 25)",
-    "none": "None yet."
+    "none": "None yet.",
+    "scalesHelp": "Left to right is day 1 to 21; bottom to top is 0 to 10. Gaps are days without a record.",
+    "emotionTitle": "Most named emotions",
+    "emotionHelp": "How many times you picked that name in the emotion dial over 21 days.",
+    "repeatsTitle": "Interpretations that returned",
+    "repeatsHelp": "Different events, same interpretation — how many separate days it appeared. If the sentence stays while the events change, the sentence came from you, not the events.",
+    "repeatsDays": "{n} days",
+    "repeatsNone": "No interpretation repeated across days."
   },
   "email": {
     "linkTitle": "Link an email",
