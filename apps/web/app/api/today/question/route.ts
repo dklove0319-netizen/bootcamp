@@ -5,7 +5,7 @@
 import { getAI } from "@vibe-kit/ai";
 import { COURSE_MODEL } from "../../../../lib/ai-models";
 import { serviceStore } from "../../../../lib/db";
-import { loopWindow } from "../../../../lib/course";
+import { loopWindow, reflectionGrounded } from "../../../../lib/course";
 import { pickLocale, langLine, ensureQuestionMark } from "../../../../lib/locale";
 
 export const runtime = "nodejs";
@@ -88,7 +88,8 @@ export async function POST(req: Request): Promise<Response> {
     });
     const textBlock = res.content.find((c) => c.type === "text");
     const raw = textBlock !== undefined && textBlock.type === "text" ? textBlock.text : "";
-    const jsonText = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    const jsonText = stripped.includes("{") ? stripped.slice(stripped.indexOf("{"), stripped.lastIndexOf("}") + 1) : stripped;
     const parsed = JSON.parse(jsonText) as {
       reflection?: string;
       evidence?: { date?: string; src?: string }[];
@@ -124,7 +125,7 @@ export async function POST(req: Request): Promise<Response> {
       .slice(0, 3);
     const distinctDates = new Set(evidence.map((e) => e.date));
     const cand = typeof parsed.reflection === "string" ? parsed.reflection.trim().slice(0, 400) : "";
-    if (cand !== "" && distinctDates.size >= 2 && evidence.some((e) => cand.includes(e.src))) {
+    if (cand !== "" && distinctDates.size >= 2 && reflectionGrounded(cand, evidence.map((e) => e.src))) {
       reflection = cand;
     } else {
       evidence = []; // 반사가 못 서면 근거도 내보내지 않는다 — 반쪽 반사 금지

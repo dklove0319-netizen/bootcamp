@@ -89,7 +89,8 @@ export async function GET(req: Request): Promise<Response> {
     });
     const textBlock = res.content.find((c) => c.type === "text");
     const raw = textBlock !== undefined && textBlock.type === "text" ? textBlock.text : "";
-    const jsonText = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    const jsonText = stripped.includes("{") ? stripped.slice(stripped.indexOf("{"), stripped.lastIndexOf("}") + 1) : stripped;
     const parsed = JSON.parse(jsonText) as { reflection?: string };
     reflection =
       typeof parsed.reflection === "string" && parsed.reflection.trim() !== ""

@@ -14,6 +14,7 @@ type Mirror3 = {
   days: number;
   repeats?: { quotes: { date: string; src: string }[] }[];
   note?: string | null;
+  reflection?: string | null;
   question?: string | null;
   emotionCounts?: { label: string; count: number }[];
   day1Answer?: { date: string; answer: string } | null;
@@ -318,6 +319,9 @@ export default function MyMirror() {
           )}
           {typeof mirror3.note === "string" && mirror3.note !== "" && (
             <p style={{ fontSize: 15, lineHeight: 1.7, margin: "10px 0 0" }}>{mirror3.note}</p>
+          )}
+          {typeof mirror3.reflection === "string" && mirror3.reflection !== "" && (
+            <p style={{ fontSize: 16, lineHeight: 1.9, fontWeight: 600, margin: "12px 0 0" }}>{mirror3.reflection}</p>
           )}
           {mirror3.day1Answer != null && (
             <div style={{ marginTop: 16 }}>

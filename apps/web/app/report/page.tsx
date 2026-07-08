@@ -14,7 +14,10 @@ type Report = {
   answers?: { dayNo: number; date: string | null; answer: string | null }[];
   links?: { delusion: string; emotion: string }[];
   who5?: { day0: number | null; day21: number };
-  finalQuestion?: { quoteDate: string | null; quoteSrc: string | null; question: string };
+  finalQuestion?: {
+    quoteDate: string | null; quoteSrc: string | null; question: string;
+    reflection?: string | null; evidence?: { date: string; src: string }[];
+  };
 };
 
 function ozeroKey(): string | null {
@@ -182,7 +185,16 @@ export default function ReportPage() {
 
       {r.finalQuestion !== undefined && (
         <div style={{ marginTop: 30, paddingTop: 18, borderTop: "1px solid #e3d9c8" }}>
-          {r.finalQuestion.quoteSrc !== null && (
+          {(r.finalQuestion.evidence ?? []).map((e, i) => (
+            <div key={i} style={{ marginBottom: 10 }}>
+              <p className="muted" style={{ fontSize: 12, margin: 0 }}>{e.date}</p>
+              <p style={{ fontSize: 15, lineHeight: 1.7, margin: "3px 0 0" }}>“{e.src}”</p>
+            </div>
+          ))}
+          {typeof r.finalQuestion.reflection === "string" && r.finalQuestion.reflection !== "" && (
+            <p style={{ fontSize: 17, lineHeight: 1.9, fontWeight: 600, margin: "14px 0 0" }}>{r.finalQuestion.reflection}</p>
+          )}
+          {r.finalQuestion.quoteSrc !== null && (r.finalQuestion.evidence ?? []).length === 0 && (
             <>
               <p className="muted" style={{ fontSize: 12, margin: 0 }}>{r.finalQuestion.quoteDate}</p>
               <p style={{ fontSize: 16, lineHeight: 1.7, margin: "4px 0 0" }}>“{r.finalQuestion.quoteSrc}”</p>

@@ -201,7 +201,8 @@ export async function POST(req: Request): Promise<Response> {
     const textBlock = res.content.find((c) => c.type === "text");
     const raw = textBlock !== undefined && textBlock.type === "text" ? textBlock.text : "";
     // 코드 펜스가 붙어 와도 벗겨서 해석
-    const jsonText = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    const jsonText = stripped.includes("{") ? stripped.slice(stripped.indexOf("{"), stripped.lastIndexOf("}") + 1) : stripped;
     const parsed = JSON.parse(jsonText) as { items?: AiItem[]; action_note?: string; question?: string };
     const aiItems = Array.isArray(parsed.items) ? parsed.items : [];
 

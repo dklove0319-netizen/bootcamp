@@ -70,3 +70,12 @@ export const WHO5_EN = [
 ];
 export const WHO5_SCALE = ["전혀 그렇지 않았다", "가끔 그랬다", "절반이 안 되는 시간 동안", "절반이 넘는 시간 동안", "대부분 그랬다", "항상 그랬다"];
 export const WHO5_SCALE_EN = ["At no time", "Some of the time", "Less than half of the time", "More than half of the time", "Most of the time", "All of the time"];
+
+/** 구조 반사의 접지 검증 (E-2·E-4 공용) — 반사 문장이 검증된 원문 조각에 실제로 뿌리내렸는지.
+ *  통과 조건: ① 검증된 조각을 통째로 품고 있거나 ② 반사 속 따옴표('...') 조각들이 전부 검증된 조각 안에 존재.
+ *  둘 다 아니면 지어낸 반사로 보고 폐기한다 (바넘 차단). */
+export function reflectionGrounded(reflection: string, verifiedSrcs: string[]): boolean {
+  if (verifiedSrcs.some((s) => reflection.includes(s))) return true;
+  const quoted = [...reflection.matchAll(/'([^']{2,})'/g)].map((m) => m[1]);
+  return quoted.length > 0 && quoted.every((q) => verifiedSrcs.some((s) => s.includes(q)));
+}

@@ -3,6 +3,7 @@
 import { getAI } from "@vibe-kit/ai";
 import { COURSE_MODEL } from "../../../lib/ai-models";
 import { pickLocale, langLine, ensureQuestionMark } from "../../../lib/locale";
+import { reflectionGrounded } from "../../../lib/course";
 import { serviceStore } from "../../../lib/db";
 
 export const runtime = "nodejs";
@@ -28,9 +29,15 @@ function topWords(texts: string[], n: number): { word: string; count: number }[]
     .map(([word, count]) => ({ word, count }));
 }
 
-const FINAL_Q_PROMPT = `당신은 "오제로의 거울"이에요. 21일 기록을 마친 참가자에게 마지막 되묻는 질문 하나를 남겨요.
-규칙: 제공된 기록에서 원문 한 조각을 골라 그대로 인용하고(quote_date, quote_src — 요약·의역 금지), 그 문장을 향한 되묻는 질문 하나. "왜" 시작 금지, 답 후보 금지, 평가·축하·위로 금지. 질문은 반드시 물음표(?)로 끝내세요.
-JSON 만: {"quote_date":"YYYY-MM-DD","quote_src":"","question":"..."}`;
+const FINAL_Q_PROMPT = `당신은 "오제로의 거울"이에요. 21일 기록을 마친 참가자에게 반복의 지도를 되비추고 마지막 되묻는 질문 하나를 남겨요.
+
+찾는 것: 사건은 달라도(연애·가족·일·돈) 같은 계열의 해석이 서로 다른 날 2번 이상 반복된 구조.
+
+출력 규칙:
+- evidence: 그 반복을 이루는 원문 조각 2~3개 — 각각 해당 날짜 기록의 원문을 한 글자도 바꾸지 말고 그대로 (요약·의역·창작 금지). 서로 다른 날짜여야 해요.
+- reflection: 반복이 실제로 있을 때만 딱 한 문장 — "당신은 [사건] 때문에 무너지는 게 아니라, 그 사건을 '[반복된 해석]'의 증거로 읽는 순간 무너집니다" 꼴. [반복된 해석] 자리에는 evidence 조각 하나를 그대로 넣으세요. 반복이 없으면 빈 문자열 — 지어내지 마세요. "당신은 ~한 사람" 구조(사람 라벨), 유형·성격·무의식 언급, 진단, 위로, 축하 금지.
+- question: 마지막 되묻는 질문 하나 — reflection 이 있으면 그 구조를 향해, 없으면 가장 무게가 실린 원문 하나를 인용(quote_date, quote_src)해 그 문장을 향해. "왜" 시작 금지, 답 후보 금지, 평가·축하·위로 금지. 질문은 반드시 물음표(?)로 끝내세요.
+JSON 만: {"reflection":"","evidence":[{"date":"YYYY-MM-DD","src":""}],"quote_date":"","quote_src":"","question":"..."}`;
 
 export async function GET(req: Request): Promise<Response> {
   const store = serviceStore();
@@ -95,22 +102,27 @@ export async function GET(req: Request): Promise<Response> {
   for (const e of submitted) {
     if (typeof e.free_text === "string" && e.free_text !== "") byDate.set(e.entry_date as string, e.free_text as string);
   }
-  let finalQuestion: { quoteDate: string | null; quoteSrc: string | null; question: string } = {
+  let finalQuestion: {
+    quoteDate: string | null; quoteSrc: string | null; question: string;
+    reflection?: string | null; evidence?: { date: string; src: string }[];
+  } = {
     quoteDate: null,
     quoteSrc: null,
     question: pickLocale(req.headers.get("accept-language")) === "ko" ? "21일의 기록에서, 지금도 몸이 반응하는 문장은 무엇인가요?" : "From the 21 days of records, which sentence does your body still react to?",
   };
   try {
-    const sample = [...byDate.entries()].filter((_, i) => i % 3 === 0).slice(0, 8); // 비용 절제 — 표본만
+    const sample = [...byDate.entries()]; // 반복의 지도는 표본이 아니라 전체에서만 보인다 (코스당 1회라 비용 허용 — E-4)
     const res = await getAI().messages.create({
       model: COURSE_MODEL,
-      max_tokens: 500,
+      max_tokens: 900,
       system: FINAL_Q_PROMPT + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
       messages: [{ role: "user", content: sample.map(([d, t]) => `[${d}]\n${t}`).join("\n\n") }],
     });
     const textBlock = res.content.find((c) => c.type === "text");
     const raw = textBlock !== undefined && textBlock.type === "text" ? textBlock.text : "";
-    const parsed = JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()) as {
+    const strippedR = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    const parsed = JSON.parse(strippedR.includes("{") ? strippedR.slice(strippedR.indexOf("{"), strippedR.lastIndexOf("}") + 1) : strippedR) as {
+      reflection?: string; evidence?: { date?: string; src?: string }[];
       quote_date?: string; quote_src?: string; question?: string;
     };
     if (typeof parsed.question === "string" && parsed.question.trim() !== "") {
@@ -119,10 +131,25 @@ export async function GET(req: Request): Promise<Response> {
         typeof parsed.quote_src === "string" &&
         parsed.quote_src.trim() !== "" &&
         (byDate.get(parsed.quote_date) ?? "").includes(parsed.quote_src.trim());
+      // 구조 반사 검증 (E-4 — E-2와 동일 기준): 원문 대조 + 다른 날짜 2개 이상 + 반사가 검증 조각 포함. 아니면 폐기.
+      let evidence = (Array.isArray(parsed.evidence) ? parsed.evidence : [])
+        .filter(
+          (ev): ev is { date: string; src: string } =>
+            typeof ev.date === "string" && typeof ev.src === "string" && ev.src.trim() !== "" &&
+            (byDate.get(ev.date) ?? "").includes(ev.src.trim())
+        )
+        .map((ev) => ({ date: ev.date, src: ev.src.trim().slice(0, 300) }))
+        .slice(0, 3);
+      const cand = typeof parsed.reflection === "string" ? parsed.reflection.trim().slice(0, 400) : "";
+      const distinct = new Set(evidence.map((ev) => ev.date));
+      const reflection = cand !== "" && distinct.size >= 2 && reflectionGrounded(cand, evidence.map((ev) => ev.src)) ? cand : null;
+      if (reflection === null) evidence = [];
       finalQuestion = {
         quoteDate: quoteOk ? (parsed.quote_date as string) : null,
         quoteSrc: quoteOk ? parsed.quote_src!.trim() : null,
         question: ensureQuestionMark(parsed.question.trim().slice(0, 400)),
+        reflection,
+        evidence,
       };
     }
   } catch {

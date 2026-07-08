@@ -5,22 +5,25 @@
 import { getAI } from "@vibe-kit/ai";
 import { MEASURE_MODEL } from "../../../../lib/ai-models";
 import { pickLocale, langLine, ensureQuestionMark } from "../../../../lib/locale";
+import { reflectionGrounded } from "../../../../lib/course";
 import { serviceStore } from "../../../../lib/db";
 
 export const runtime = "nodejs";
 
-const MIRROR3_PROMPT = `당신은 "오제로의 거울"이에요. 위로하지 않는 목격자예요. 참가자의 최근 사흘 기록을 되비춰요.
+const MIRROR3_PROMPT = `당신은 "오제로의 거울"이에요. 위로하지 않는 목격자예요. 참가자의 최근 기록(제공된 기간 전체)을 되비춰요.
 
-작업: 사흘의 기록에서 반복된 해석(카메라에 안 찍히는 판단·마음 읽기·일반화·자기 판결)을 찾아요. 반복 = 같은 계열의 해석이 두 날 이상 나온 것.
+작업: 제공된 기간 전체의 기록에서 반복된 해석(카메라에 안 찍히는 판단·마음 읽기·일반화·자기 판결)을 찾아요. 반복 = 같은 계열의 해석이 두 날 이상 나온 것.
 
 규칙:
 - quotes 의 src 는 해당 날짜 기록의 원문 조각을 한 글자도 바꾸지 말고 그대로 잘라 넣으세요. 요약·의역·창작 금지. 반복이 없으면 repeats 는 빈 배열.
-- note: 수치 관찰 딱 한 문장 — "'무시당했다'는 해석이 사흘 중 3일 나와요." 형식. 평가·칭찬·성장 서사·유형명 금지. 반복이 없으면 빈 문자열.
+- note: 수치 관찰 딱 한 문장 — "'무시당했다'는 해석이 14일 중 5일 나와요." 형식 (기간·날수는 실제대로). 평가·칭찬·성장 서사·유형명 금지. 반복이 없으면 빈 문자열.
 - question: 가장 자주 반복된 해석 하나를 향한 되묻는 질문 딱 하나. "왜" 시작 금지, 답의 후보 금지, "당신은 ~한 사람" 구조 금지. 반복이 없으면 기록 전체에서 가장 무게가 실린 문장을 향해.
 - ~이에요/~해요체. 건조하게. 이모지·느낌표 금지.
 
+- reflection: 반복이 선명할 때만 딱 한 문장 — "당신은 [사건] 때문에 무너지는 게 아니라, 그 사건을 '[반복된 해석]'의 증거로 읽는 순간 무너집니다" 꼴. [반복된 해석] 자리에는 quotes 조각 하나를 그대로. 반복이 없으면 빈 문자열. 사람 라벨·유형·무의식 언급 금지.
+
 JSON 으로만 답하세요:
-{"repeats":[{"quotes":[{"date":"YYYY-MM-DD","src":"원문 조각"}]}],"note":"","question":"..."}`;
+{"repeats":[{"quotes":[{"date":"YYYY-MM-DD","src":"원문 조각"}]}],"note":"","reflection":"","question":"..."}`;
 
 type Quote = { date?: string; src?: string };
 type Repeat = { quotes?: Quote[] };
@@ -86,8 +89,9 @@ export async function GET(req: Request): Promise<Response> {
     });
     const textBlock = res.content.find((c) => c.type === "text");
     const raw = textBlock !== undefined && textBlock.type === "text" ? textBlock.text : "";
-    const jsonText = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-    const parsed = JSON.parse(jsonText) as { repeats?: Repeat[]; note?: string; question?: string };
+    const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    const jsonText = stripped.includes("{") ? stripped.slice(stripped.indexOf("{"), stripped.lastIndexOf("}") + 1) : stripped;
+    const parsed = JSON.parse(jsonText) as { repeats?: Repeat[]; note?: string; reflection?: string; question?: string };
 
     // 인용 검증: 그 날짜의 원문에 실제로 있는 조각만 (절대 규칙 2). 반복은 2일 이상만.
     const repeats = (Array.isArray(parsed.repeats) ? parsed.repeats : [])
@@ -108,10 +112,16 @@ export async function GET(req: Request): Promise<Response> {
     const question =
       typeof parsed.question === "string" && parsed.question.trim() !== "" ? ensureQuestionMark(parsed.question.trim().slice(0, 300)) : null;
 
+    // 구조 반사 (E-4): 검증 통과한 반복 인용 조각을 그대로 담고 있을 때만 통과
+    const verifiedSrcs = repeats.flatMap((rep) => rep.quotes.map((q) => q.src));
+    const cand = typeof parsed.reflection === "string" ? parsed.reflection.trim().slice(0, 400) : "";
+    const reflection = cand !== "" && repeats.length > 0 && reflectionGrounded(cand, verifiedSrcs) ? cand : null;
+
     return Response.json({
       days: days.length,
       repeats,
       note: repeats.length > 0 ? note : null,
+      reflection,
       question,
       emotionCounts: [...emotionCounts.entries()].sort((a, b) => b[1] - a[1]).map(([label, count]) => ({ label, count })),
       day1Answer,
