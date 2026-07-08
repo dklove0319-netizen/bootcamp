@@ -27,7 +27,7 @@ export async function GET(req: Request): Promise<Response> {
   const profile = profiles[0];
 
   const er = await fetch(
-    `${store.url}/rest/v1/daily_entries?user_id=eq.${secret}&deleted_at=is.null&order=created_at.desc&select=entry_date,free_text,user_split,ai_split,question_text`,
+    `${store.url}/rest/v1/daily_entries?user_id=eq.${secret}&deleted_at=is.null&order=created_at.desc&select=entry_date,free_text,user_split,ai_split,question_text,answer_text,action_text,action_result,emotion_label`,
     { headers: store.headers, cache: "no-store" }
   );
   const entries = er.ok ? await er.json() : [];

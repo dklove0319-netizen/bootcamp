@@ -8,7 +8,10 @@ import { formatHour, clientLocale } from "../../lib/time";
 import { COURSE_PRICE, LIST_PRICE, formatKrw } from "../../lib/pricing";
 
 type Split = { src: string; label: string };
-type Entry = { entry_date: string; free_text: string | null; user_split: Split[] | null; ai_split: Split[] | null; question_text: string | null };
+type Entry = {
+  entry_date: string; free_text: string | null; user_split: Split[] | null; ai_split: Split[] | null;
+  question_text: string | null; answer_text: string | null; action_text: string | null; action_result: string | null; emotion_label: string | null;
+};
 type Me = { observerCode: string; recordHour: number; timezone: string; email: string | null; entries: Entry[] };
 type Mirror3 = {
   days: number;
@@ -372,11 +375,16 @@ export default function MyMirror() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
           {me.entries.map((e, i) => (
-            <div key={i}>
-              <p className="muted" style={{ fontSize: 12, margin: "0 0 6px" }}>{e.entry_date}</p>
+            <div key={i} style={{ paddingBottom: 16, borderBottom: "1px dashed #e3d9c8" }}>
+              <p className="muted" style={{ fontSize: 12, margin: "0 0 6px" }}>
+                {e.entry_date}{e.emotion_label !== null && e.emotion_label !== "" ? ` · ${e.emotion_label}` : ""}
+              </p>
+              {e.free_text !== null && e.free_text !== "" && (
+                <p style={{ margin: "0 0 10px", fontSize: 15, lineHeight: 1.8, whiteSpace: "pre-line" }}>{e.free_text}</p>
+              )}
               {(e.ai_split ?? []).map((c, j) => (
                 <div key={j} style={{ marginBottom: 6 }}>
-                  <p style={{ margin: 0, fontSize: 15 }}>“{c.src}”</p>
+                  <p style={{ margin: 0, fontSize: 14 }} className="muted">“{c.src}”</p>
                   <p className="muted" style={{ margin: "1px 0 0", fontSize: 12, fontWeight: c.label === "delusion" ? 600 : 400 }}>
                     {c.label === "fact" ? m.measure.fact : c.label === "delusion" ? m.measure.delusion : m.measure.unclear}
                   </p>
@@ -384,6 +392,17 @@ export default function MyMirror() {
               ))}
               {e.question_text !== null && e.question_text !== "" && (
                 <p style={{ fontSize: 15, lineHeight: 1.7, marginTop: 8 }}>{e.question_text}</p>
+              )}
+              {e.answer_text !== null && e.answer_text !== "" && (
+                <p style={{ fontSize: 14, lineHeight: 1.7, marginTop: 6 }}>
+                  <span className="muted">{m.me.myAnswer} — </span>“{e.answer_text}”
+                </p>
+              )}
+              {e.action_text !== null && e.action_text !== "" && (
+                <p className="muted" style={{ fontSize: 13, lineHeight: 1.7, marginTop: 6 }}>
+                  {m.me.myAction} — “{e.action_text}”
+                  {e.action_result === "done" ? ` (${m.me.actionDone})` : e.action_result === "partial" ? ` (${m.me.actionPartial})` : e.action_result === "skipped" ? ` (${m.me.actionSkipped})` : ""}
+                </p>
               )}
             </div>
           ))}
