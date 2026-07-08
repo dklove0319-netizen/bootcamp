@@ -25,6 +25,31 @@ function ozeroKey(): string | null {
   try { return window.localStorage.getItem("ozero_key"); } catch { return null; }
 }
 
+// 동료 존재감 (블럭 9 · S11) — 제출한 사람에게만 서버가 열어준다
+function Peers({ m }: { m: ReturnType<typeof useMessages> }) {
+  const [d, setD] = useState<{ eligible?: boolean; count?: number; shared?: string | null } | null>(null);
+  useEffect(() => {
+    const key = ozeroKey();
+    if (key === null) return;
+    fetch("/api/today/peers", { headers: { "x-ozero-key": key } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setD)
+      .catch(() => {});
+  }, []);
+  if (d === null || d.eligible !== true) return null;
+  return (
+    <div style={{ marginTop: 22 }}>
+      <p className="muted" style={{ fontSize: 14, margin: 0 }}>{m.loop.peersCount.replace("{n}", String(d.count ?? 1))}</p>
+      {typeof d.shared === "string" && d.shared !== "" && (
+        <>
+          <p className="muted" style={{ fontSize: 12, margin: "12px 0 0" }}>{m.loop.peersShared}</p>
+          <p style={{ fontSize: 15, lineHeight: 1.7, margin: "4px 0 0" }}>“{d.shared}”</p>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** S06 기계 조각내기 — 문장 끝·줄바꿈 경계 (판단 없는 문법 기준) */
 function splitFragments(text: string): string[] {
   return text.split(/(?<=[.!?…])\s+|\n+/).map((s) => s.trim()).filter((s) => s.length > 1);
@@ -235,6 +260,7 @@ export default function Today() {
         <p className="muted" style={{ fontSize: 14, marginTop: 8 }}>
           {m.loop.nextOpens.replace("{t}", formatHour(t.recordHour, loc))}
         </p>
+        <Peers m={m} />
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 24 }}>
           <Link href="/me" className="muted" style={{ textDecoration: "underline" }}>{m.save.toMe}</Link>
         </div>

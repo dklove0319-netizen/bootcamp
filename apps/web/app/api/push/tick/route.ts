@@ -65,8 +65,11 @@ export async function POST(req: Request): Promise<Response> {
     const due = mySubs.filter((s) => s.last_sent_date === null || s.last_sent_date < entryDate);
     if (due.length > 0) targets.push({ p, entryDate, subs: due });
   }
-  if (targets.length === 0) return Response.json({ sent: 0, cleaned: 0 });
+  let sent = 0;
+  let cleaned = 0;
+  let reminded = 0;
 
+  if (targets.length > 0) {
   // 3일 연속 미기록 판별 재료 — 직전 3일의 제출 기록을 한 번에 읽는다
   const minDate = shiftDate(targets.map((t) => t.entryDate).sort()[0], -3);
   const er = await fetch(
@@ -76,8 +79,6 @@ export async function POST(req: Request): Promise<Response> {
   const recent: { user_id: string; entry_date: string }[] = er.ok ? await er.json() : [];
   const submittedSet = new Set(recent.map((r) => r.user_id + "|" + r.entry_date));
 
-  let sent = 0;
-  let cleaned = 0;
   for (const t of targets) {
     const missed3 = [1, 2, 3].every((n) => !submittedSet.has(t.p.user_id + "|" + shiftDate(t.entryDate, -n)));
     const body = missed3
@@ -108,5 +109,73 @@ export async function POST(req: Request): Promise<Response> {
       }
     }
   }
-  return Response.json({ sent, cleaned });
+  }
+
+  // ---- 낮 행동 리마인더 (블럭 8-2 · 옵트인) — 13시(사용자 시간대), 문구는 본인이 쓴 행동 원문 인용 (지시서 5번) ----
+  const REMINDER_HOUR = 13;
+  const remindTargets: { p: Profile; entryDate: string; subs: Sub[] }[] = [];
+  for (const p of profiles) {
+    const mySubs = subsOf.get(p.user_id) ?? [];
+    if (mySubs.length === 0) continue;
+    if (journeyOf.get(p.user_id) === undefined) continue;
+    const hour = forcedHour ?? localHour(p.timezone);
+    if (hour !== REMINDER_HOUR || p.record_hour === REMINDER_HOUR) continue; // 저녁 푸시 시각과 겹치면 저녁이 우선
+    const { entryDate } = loopWindow(new Date(), p.timezone, p.record_hour);
+    remindTargets.push({ p, entryDate, subs: mySubs });
+  }
+  if (remindTargets.length > 0) {
+    const ids = remindTargets.map((t) => t.p.user_id).join(",");
+    const dates = [...new Set(remindTargets.map((t) => t.entryDate))].join(",");
+    // 리마인더를 켠(옵트인) 제출 기록의 행동 원문 + 이미 보낸 장부를 한 번에 읽는다 (N+1 금지)
+    const [ar, dr] = await Promise.all([
+      fetch(
+        `${store.url}/rest/v1/daily_entries?user_id=in.(${ids})&entry_date=in.(${dates})&action_reminder=eq.true&action_text=not.is.null&submitted_at=not.is.null&deleted_at=is.null&select=user_id,entry_date,day_no,action_text`,
+        { headers: store.headers, cache: "no-store" }
+      ),
+      fetch(
+        `${store.url}/rest/v1/step_events?user_id=in.(${ids})&entry_date=in.(${dates})&event=eq.action_ping&select=user_id,entry_date`,
+        { headers: store.headers, cache: "no-store" }
+      ),
+    ]);
+    const acts = ar.ok ? ((await ar.json()) as { user_id: string; entry_date: string; day_no: number | null; action_text: string }[]) : [];
+    const already = new Set(
+      (dr.ok ? ((await dr.json()) as { user_id: string; entry_date: string }[]) : []).map((x) => x.user_id + "|" + x.entry_date)
+    );
+    const actOf = new Map(acts.map((a) => [a.user_id + "|" + a.entry_date, a]));
+    for (const t of remindTargets) {
+      const a = actOf.get(t.p.user_id + "|" + t.entryDate);
+      if (a === undefined || already.has(t.p.user_id + "|" + t.entryDate)) continue;
+      // 지시서 5번 고정 형식 — 앱이 시키는 말투 금지, 원문 인용만
+      const payload = JSON.stringify({ title: "오제로의 거울", body: `어제 당신이 정한 행동 — '${a.action_text}'`, url: "/today", tag: "ozero-action" });
+      const results = await Promise.allSettled(
+        t.subs.map((sb) => webpush.sendNotification({ endpoint: sb.endpoint, keys: { p256dh: sb.p256dh, auth: sb.auth } }, payload))
+      );
+      let delivered = false;
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        if (r.status === "fulfilled") {
+          delivered = true;
+        } else {
+          const code = (r.reason as { statusCode?: number }).statusCode ?? 0;
+          if (code === 404 || code === 410) {
+            cleaned++;
+            await fetch(`${store.url}/rest/v1/push_subs?endpoint=eq.${encodeURIComponent(t.subs[i].endpoint)}`, {
+              method: "DELETE", headers: store.headers,
+            }).catch(() => {});
+          }
+        }
+      }
+      if (delivered) {
+        reminded++;
+        // 하루 1회 장부 (step_events 재사용 — event='action_ping')
+        await fetch(`${store.url}/rest/v1/step_events`, {
+          method: "POST",
+          headers: { ...store.headers, prefer: "return=minimal" },
+          body: JSON.stringify({ user_id: t.p.user_id, entry_date: t.entryDate, day_no: a.day_no ?? 0, step: 10, event: "action_ping" }),
+        }).catch(() => {});
+      }
+    }
+  }
+
+  return Response.json({ sent, cleaned, reminded });
 }

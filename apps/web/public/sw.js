@@ -11,7 +11,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      tag: "ozero-evening", // 같은 태그면 중복 알림이 쌓이지 않는다
+      tag: data.tag || "ozero-evening", // 같은 태그면 중복 알림이 쌓이지 않는다
       data: { url: data.url },
     })
   );

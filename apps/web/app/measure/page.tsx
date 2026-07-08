@@ -35,6 +35,38 @@ function ozeroKey(): string | null {
   }
 }
 
+// 공유 카드 (블럭 6 · S18) — "사실 n : 망상 m" 측정값과 주소만 담는다. 기록 문장은 어디에도 넣지 않는다.
+async function saveCard(f: number, d: number, label: string, url: string, fileName: string): Promise<void> {
+  const c = document.createElement("canvas");
+  c.width = 720; c.height = 900;
+  const x = c.getContext("2d");
+  if (x === null) return;
+  x.fillStyle = "#545454";
+  x.fillRect(0, 0, 720, 900);
+  x.fillStyle = "#fcf9f3";
+  x.textAlign = "center";
+  x.font = "500 44px Pretendard, sans-serif";
+  x.fillText(".o0", 360, 180);
+  x.font = "700 64px Pretendard, sans-serif";
+  x.fillText(label, 360, 470);
+  x.globalAlpha = 0.75;
+  x.font = "400 26px Pretendard, sans-serif";
+  x.fillText(url, 360, 780);
+  x.globalAlpha = 1;
+  const blob: Blob | null = await new Promise((res) => c.toBlob(res, "image/png"));
+  if (blob === null) return;
+  const file = new File([blob], fileName, { type: "image/png" });
+  const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean; share?: (d: { files: File[] }) => Promise<void> };
+  if (typeof nav.canShare === "function" && nav.canShare({ files: [file] }) && typeof nav.share === "function") {
+    try { await nav.share({ files: [file] }); return; } catch { /* 취소 시 저장으로 */ }
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 const boxStyle: React.CSSProperties = {
   width: "100%",
   padding: 12,
@@ -184,6 +216,16 @@ export default function Measure() {
             .replace("{f}", String(result.factCount))
             .replace("{d}", String(result.delusionCount))}
         </p>
+        <button
+          type="button"
+          onClick={() => {
+            const label = m.measure.ratio.replace("{f}", String(result.factCount)).replace("{d}", String(result.delusionCount));
+            void saveCard(result.factCount, result.delusionCount, label, "ozero-mirror.vercel.app", "ozero-mirror-card.png");
+          }}
+          style={{ marginTop: 10, background: "none", border: "none", color: "var(--muted)", textDecoration: "underline", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}
+        >
+          {m.measure.shareCard}
+        </button>
         {result.question !== null && (
           <>
             <p style={{ marginTop: 26, fontSize: 17, lineHeight: 1.7 }}>{result.question}</p>

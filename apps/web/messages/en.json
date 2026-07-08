@@ -47,7 +47,9 @@
     "recallTitle": "Yesterday's mirror",
     "recallQuestion": "Yesterday's question",
     "recallAnswer": "Your answer",
-    "recallNoAnswer": "Yesterday's question was left unanswered. On to today's record."
+    "recallNoAnswer": "Yesterday's question was left unanswered. On to today's record.",
+    "shareCard": "Save result card",
+    "shareCardDone": "Card saved."
   },
   "save": {
     "prompt": "This question does not end here.",
@@ -148,7 +150,9 @@
     "day0Intro": "Before your first record, leave the you of now. The you of day 21 will look at this again. Answer for the past two weeks.",
     "day0Scale": "0 at no time · 5 all of the time",
     "who5Note": "WHO-5 Well-Being Index (World Health Organization, 1998)",
-    "day0Submit": "Leave it"
+    "day0Submit": "Leave it",
+    "peersCount": "Today {n} observers left a record.",
+    "peersShared": "One anonymous answer from the same day"
   },
   "course": {
     "needId": "The 21-day course needs an Ozero ID. Get one through a measurement first.",

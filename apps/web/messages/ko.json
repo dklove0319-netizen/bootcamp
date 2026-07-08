@@ -47,7 +47,9 @@
     "recallTitle": "어제의 거울",
     "recallQuestion": "어제의 질문",
     "recallAnswer": "당신의 답",
-    "recallNoAnswer": "어제의 질문에 답이 남지 않았어요. 오늘의 기록으로 갑니다."
+    "recallNoAnswer": "어제의 질문에 답이 남지 않았어요. 오늘의 기록으로 갑니다.",
+    "shareCard": "결과 카드 저장",
+    "shareCardDone": "카드를 저장했어요."
   },
   "save": {
     "prompt": "이 질문은 여기서 끝나지 않아요.",
@@ -148,7 +150,9 @@
     "day0Intro": "첫 기록 전에, 지금의 나를 남겨요. 21일째의 당신이 이걸 다시 봐요. 지난 2주 동안 어땠는지 남겨주세요.",
     "day0Scale": "0 전혀 그렇지 않았다 · 5 항상 그랬다",
     "who5Note": "WHO-5 웰빙 지수 (세계보건기구, 1998)",
-    "day0Submit": "남기기"
+    "day0Submit": "남기기",
+    "peersCount": "오늘 {n}명이 기록을 남겼어요.",
+    "peersShared": "같은 날의 익명 답변 하나"
   },
   "course": {
     "needId": "21일 코스는 오제로 아이디가 있어야 시작할 수 있어요. 먼저 측정으로 아이디를 받아주세요.",
