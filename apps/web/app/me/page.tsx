@@ -34,6 +34,10 @@ type TodayInfo = {
 
 const KEY = "ozero_key";
 
+// 거울의 목소리 표시 (사용자 지시 2026-07-08) — 내 인용문과 확실히 구별되게 왼쪽 세로선 + 들여쓰기.
+// 인용문은 " " 따옴표(내 말), 거울의 질문·되비춤은 이 세로선(거울의 말)로 갈린다.
+const MIRROR_VOICE = { borderLeft: "3px solid #c7b299", paddingLeft: 12, borderRadius: 0 };
+
 // VAPID 공개 도장(base64url) → 브라우저 구독이 요구하는 바이트 배열
 function vapidBytes(key: string): Uint8Array {
   const pad = "=".repeat((4 - (key.length % 4)) % 4);
@@ -337,10 +341,10 @@ export default function MyMirror() {
             </p>
           )}
           {typeof mirror3.note === "string" && mirror3.note !== "" && (
-            <p style={{ fontSize: 15, lineHeight: 1.7, margin: "10px 0 0" }}>{mirror3.note}</p>
+            <p style={{ ...MIRROR_VOICE, fontSize: 15, lineHeight: 1.7, margin: "10px 0 0" }}>{mirror3.note}</p>
           )}
           {typeof mirror3.reflection === "string" && mirror3.reflection !== "" && (
-            <p style={{ fontSize: 16, lineHeight: 1.9, fontWeight: 600, margin: "12px 0 0" }}>{mirror3.reflection}</p>
+            <p style={{ ...MIRROR_VOICE, fontSize: 16, lineHeight: 1.9, fontWeight: 600, margin: "12px 0 0" }}>{mirror3.reflection}</p>
           )}
           {mirror3.day1Answer != null && (
             <div style={{ marginTop: 16 }}>
@@ -349,7 +353,7 @@ export default function MyMirror() {
             </div>
           )}
           {typeof mirror3.question === "string" && mirror3.question !== "" && (
-            <p style={{ fontSize: 16, lineHeight: 1.7, margin: "14px 0 0" }}>{mirror3.question}</p>
+            <p style={{ ...MIRROR_VOICE, fontSize: 16, lineHeight: 1.7, margin: "14px 0 0" }}>{mirror3.question}</p>
           )}
 
           {(todayInfo === null || todayInfo.course !== "mirror21") && (
@@ -391,7 +395,7 @@ export default function MyMirror() {
                 </div>
               ))}
               {e.question_text !== null && e.question_text !== "" && (
-                <p style={{ fontSize: 15, lineHeight: 1.7, marginTop: 8 }}>{e.question_text}</p>
+                <p style={{ ...MIRROR_VOICE, fontSize: 15, lineHeight: 1.7, marginTop: 8 }}>{e.question_text}</p>
               )}
               {e.answer_text !== null && e.answer_text !== "" && (
                 <p style={{ fontSize: 14, lineHeight: 1.7, marginTop: 6 }}>

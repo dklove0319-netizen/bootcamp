@@ -12,8 +12,8 @@ export function pickLocale(acceptLanguage: string | null): Locale {
  *  영어 화면인데 한글 기록을 쓰면 질문이 한글로 나오던 것 수정. 인용(원문 조각)만 원문 그대로 유지). */
 export function langLine(locale: Locale): string {
   return locale === "ko"
-    ? "출력 언어: 모든 출력(질문·이유·관찰)은 한국어 ~이에요/~해요체로 쓰세요. 인용 조각(src, quote)만 원문 그대로."
-    : "Output language: write ALL output (questions, reasons, notes) in English with the same dry, neutral witness tone. Only quoted fragments (src, quote) stay verbatim in their original language.";
+    ? "출력 언어·말투: 모든 출력(질문·이유·관찰·되비춤)은 한국어 ~이에요/~해요체(존댓말)로만 쓰세요. 참가자가 반말·비속어·캐주얼하게 썼더라도 거울은 절대 그 말투를 따라가지 말고 항상 존댓말을 지켜요 — 반말('~야', '~해', '기억나?')로 끝내지 마세요. 인용 조각(src, quote)만 참가자 원문 그대로 두세요."
+    : "Output language & register: write ALL output (questions, reasons, notes, reflections) in English with the same dry, calm, polite witness tone. Even if the participant wrote casually or with slang, never mirror their register — keep it steady. Only quoted fragments (src, quote) stay verbatim in the participant's original words.";
 }
 
 /** 모든 질문은 물음표로 끝난다 (사용자 지시 2026-07-08) — AI가 빼먹어도 서버가 보정한다 */

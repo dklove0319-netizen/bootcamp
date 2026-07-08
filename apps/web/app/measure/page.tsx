@@ -67,6 +67,9 @@ async function saveCard(f: number, d: number, label: string, url: string, fileNa
   URL.revokeObjectURL(a.href);
 }
 
+// 거울의 목소리 표시 (사용자 지시 2026-07-08) — 내 인용문("…")과 갈리게 왼쪽 세로선 + 들여쓰기
+const MIRROR_VOICE: React.CSSProperties = { borderLeft: "3px solid #c7b299", paddingLeft: 12, borderRadius: 0 };
+
 const boxStyle: React.CSSProperties = {
   width: "100%",
   padding: 12,
@@ -228,7 +231,7 @@ export default function Measure() {
         </button>
         {result.question !== null && (
           <>
-            <p style={{ marginTop: 26, fontSize: 17, lineHeight: 1.7 }}>{result.question}</p>
+            <p style={{ ...MIRROR_VOICE, marginTop: 26, fontSize: 17, lineHeight: 1.7 }}>{result.question}</p>
             <p className="muted" style={{ margin: "14px 0 6px", fontSize: 13 }}>{m.measure.answerLabel}</p>
             <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={3} style={boxStyle} />
           </>
@@ -275,14 +278,14 @@ export default function Measure() {
       {recall !== null && (
         <div style={{ marginTop: 24, paddingBottom: 8, borderBottom: "1px solid #e3d9c8" }}>
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>{m.measure.recallTitle}</p>
-          <p style={{ margin: "8px 0 0", fontSize: 15, lineHeight: 1.7 }}>{recall.question}</p>
+          <p style={{ ...MIRROR_VOICE, margin: "8px 0 0", fontSize: 15, lineHeight: 1.7 }}>{recall.question}</p>
           {recall.answer !== null && recall.answer !== undefined ? (
             <>
               <p className="muted" style={{ margin: "10px 0 0", fontSize: 13 }}>
                 {m.measure.recallAnswer} — “{recall.answer}”
               </p>
               {typeof recall.reflection === "string" && (
-                <p style={{ margin: "10px 0 8px", fontSize: 15, lineHeight: 1.8 }}>{recall.reflection}</p>
+                <p style={{ ...MIRROR_VOICE, margin: "10px 0 8px", fontSize: 15, lineHeight: 1.8 }}>{recall.reflection}</p>
               )}
             </>
           ) : (
