@@ -2,6 +2,7 @@
 // 패턴 명명·유형 라벨·성장 평가·축하 전부 금지 (지시서 4·11번).
 import { getAI } from "@vibe-kit/ai";
 import { COURSE_MODEL } from "../../../lib/ai-models";
+import { pickLocale, langLine, ensureQuestionMark } from "../../../lib/locale";
 import { serviceStore } from "../../../lib/db";
 
 export const runtime = "nodejs";
@@ -28,7 +29,7 @@ function topWords(texts: string[], n: number): { word: string; count: number }[]
 }
 
 const FINAL_Q_PROMPT = `당신은 "오제로의 거울"이에요. 21일 기록을 마친 참가자에게 마지막 되묻는 질문 하나를 남겨요.
-규칙: 제공된 기록에서 원문 한 조각을 골라 그대로 인용하고(quote_date, quote_src — 요약·의역 금지), 그 문장을 향한 되묻는 질문 하나. "왜" 시작 금지, 답 후보 금지, 평가·축하·위로 금지. ~이에요/해요체.
+규칙: 제공된 기록에서 원문 한 조각을 골라 그대로 인용하고(quote_date, quote_src — 요약·의역 금지), 그 문장을 향한 되묻는 질문 하나. "왜" 시작 금지, 답 후보 금지, 평가·축하·위로 금지. 질문은 반드시 물음표(?)로 끝내세요.
 JSON 만: {"quote_date":"YYYY-MM-DD","quote_src":"","question":"..."}`;
 
 export async function GET(req: Request): Promise<Response> {
@@ -97,14 +98,14 @@ export async function GET(req: Request): Promise<Response> {
   let finalQuestion: { quoteDate: string | null; quoteSrc: string | null; question: string } = {
     quoteDate: null,
     quoteSrc: null,
-    question: "21일의 기록에서, 지금도 몸이 반응하는 문장은 무엇인가요.",
+    question: pickLocale(req.headers.get("accept-language")) === "ko" ? "21일의 기록에서, 지금도 몸이 반응하는 문장은 무엇인가요?" : "From the 21 days of records, which sentence does your body still react to?",
   };
   try {
     const sample = [...byDate.entries()].filter((_, i) => i % 3 === 0).slice(0, 8); // 비용 절제 — 표본만
     const res = await getAI().messages.create({
       model: COURSE_MODEL,
       max_tokens: 500,
-      system: FINAL_Q_PROMPT,
+      system: FINAL_Q_PROMPT + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
       messages: [{ role: "user", content: sample.map(([d, t]) => `[${d}]\n${t}`).join("\n\n") }],
     });
     const textBlock = res.content.find((c) => c.type === "text");
@@ -121,7 +122,7 @@ export async function GET(req: Request): Promise<Response> {
       finalQuestion = {
         quoteDate: quoteOk ? (parsed.quote_date as string) : null,
         quoteSrc: quoteOk ? parsed.quote_src!.trim() : null,
-        question: parsed.question.trim().slice(0, 400),
+        question: ensureQuestionMark(parsed.question.trim().slice(0, 400)),
       };
     }
   } catch {

@@ -9,7 +9,7 @@ import { COURSE_PRICE, LIST_PRICE, formatKrw } from "../../lib/pricing";
 
 type Split = { src: string; label: string };
 type Entry = { entry_date: string; free_text: string | null; user_split: Split[] | null; ai_split: Split[] | null; question_text: string | null };
-type Me = { observerCode: string; recordHour: number; timezone: string; entries: Entry[] };
+type Me = { observerCode: string; recordHour: number; timezone: string; email: string | null; entries: Entry[] };
 type Mirror3 = {
   days: number;
   repeats?: { quotes: { date: string; src: string }[] }[];
@@ -120,6 +120,56 @@ function NotifySwitch({ m, hourText }: { m: ReturnType<typeof useMessages>; hour
   );
 }
 
+// 이메일 연결 구역 (3-1) — 기기를 잃어도 아이디를 되찾을 수 있게 복구용 주소 하나를 붙인다
+function EmailSection({ m, linked }: { m: ReturnType<typeof useMessages>; linked: string | null }) {
+  const [email, setEmail] = useState("");
+  const [st, setSt] = useState<"idle" | "busy" | "sent">("idle");
+  const [error, setError] = useState("");
+
+  if (linked !== null) {
+    return <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>{m.email.linked.replace("{e}", linked)}</p>;
+  }
+  if (st === "sent") {
+    return <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>{m.email.sent}</p>;
+  }
+  return (
+    <div style={{ marginTop: 12 }}>
+      <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "0 0 6px" }}>{m.email.linkHint}</p>
+      <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+        <input
+          type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={m.email.placeholder}
+          style={{ padding: "8px 10px", textAlign: "left", background: "#fffdf8", color: "var(--ink)", border: "1px solid #e3d9c8", borderRadius: 8, fontSize: 14, fontFamily: "inherit", width: 200 }}
+        />
+        <button type="button" disabled={st === "busy"} onClick={async () => {
+          setError("");
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError(m.email.bad); return; }
+          setSt("busy");
+          try {
+            const key = window.localStorage.getItem(KEY);
+            const r = await fetch("/api/email/link", {
+              method: "POST",
+              headers: { "content-type": "application/json", ...(key !== null ? { "x-ozero-key": key } : {}) },
+              body: JSON.stringify({ email: email.trim() }),
+            });
+            const d = (await r.json()) as { sent?: boolean; reason?: string; error?: string };
+            if (r.status === 409) { setSt("idle"); setError(m.email.taken); return; }
+            if (!r.ok) { setSt("idle"); setError(m.email.failed); return; }
+            if (d.sent !== true) { setSt("idle"); setError(m.email.mailUnavailable); return; }
+            setSt("sent");
+          } catch {
+            setSt("idle");
+            setError(m.email.failed);
+          }
+        }}
+          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #d9d2c4", background: "transparent", color: "var(--muted)", cursor: "pointer", fontSize: 13, fontFamily: "var(--font-main)" }}>
+          {m.email.send}
+        </button>
+      </div>
+      {error !== "" && <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>{error}</p>}
+    </div>
+  );
+}
+
 export default function MyMirror() {
   const m = useMessages();
   const loc = clientLocale();
@@ -190,6 +240,9 @@ export default function MyMirror() {
         <p style={{ marginTop: "20dvh", fontSize: 16 }}>{m.me.none}</p>
         <div style={{ marginTop: "auto", paddingBottom: 16 }}>
           <Link href="/measure" className="btn">{m.me.toMeasure}</Link>
+          <p style={{ marginTop: 12 }}>
+            <Link href="/recover" className="muted" style={{ textDecoration: "underline", fontSize: 13 }}>{m.email.lost}</Link>
+          </p>
         </div>
       </main>
     );
@@ -216,6 +269,7 @@ export default function MyMirror() {
         {m.me.deliverAt.replace("{t}", formatHour(me.recordHour, loc))}
       </p>
       <NotifySwitch m={m} hourText={formatHour(me.recordHour, loc)} />
+      <EmailSection m={m} linked={me.email ?? null} />
 
       {todayInfo !== null && (
         <div style={{ marginTop: 22 }}>
@@ -317,6 +371,7 @@ export default function MyMirror() {
       )}
 
       <div style={{ marginTop: "auto", paddingTop: 24, paddingBottom: 16 }}>
+        <Link href="/settings" className="muted" style={{ textDecoration: "underline", marginRight: 16 }}>{m.settings.toSettings}</Link>
         <Link href="/" className="muted" style={{ textDecoration: "underline" }}>{m.me.backHome}</Link>
       </div>
     </main>

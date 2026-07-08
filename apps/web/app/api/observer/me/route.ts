@@ -17,10 +17,10 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   const pr = await fetch(
-    `${store.url}/rest/v1/profiles?user_id=eq.${secret}&deleted_at=is.null&select=observer_code,record_hour,timezone`,
+    `${store.url}/rest/v1/profiles?user_id=eq.${secret}&deleted_at=is.null&select=observer_code,record_hour,timezone,email,email_verified_at`,
     { headers: store.headers, cache: "no-store" }
   );
-  const profiles = pr.ok ? ((await pr.json()) as { observer_code: string; record_hour: number; timezone: string }[]) : [];
+  const profiles = pr.ok ? ((await pr.json()) as { observer_code: string; record_hour: number; timezone: string; email: string | null; email_verified_at: string | null }[]) : [];
   if (profiles.length === 0) {
     return Response.json({ error: "not-found" }, { status: 404 });
   }
@@ -36,6 +36,7 @@ export async function GET(req: Request): Promise<Response> {
     observerCode: profile.observer_code,
     recordHour: profile.record_hour,
     timezone: profile.timezone,
+    email: profile.email_verified_at !== null ? profile.email : null,
     entries,
   });
 }

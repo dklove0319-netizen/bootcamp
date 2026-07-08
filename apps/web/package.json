@@ -11,12 +11,14 @@
     "@vibe-kit/ai": "workspace:*",
     "@vibe-kit/supabase": "workspace:*",
     "next": "^15.3.0",
+    "nodemailer": "6.9.16",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "web-push": "3.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/web-push": "^3.6.4",

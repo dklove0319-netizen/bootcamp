@@ -1,6 +1,7 @@
 // 하루 루프 10단계 — 행동 제안 (S10). 명시적 요청(버튼) 시에만 노출 — 행동의 주어는 사용자 (원칙 5).
 import { getAI } from "@vibe-kit/ai";
 import { COURSE_MODEL } from "../../../../lib/ai-models";
+import { pickLocale, langLine } from "../../../../lib/locale";
 
 export const runtime = "nodejs";
 
@@ -27,7 +28,7 @@ export async function POST(req: Request): Promise<Response> {
     const res = await getAI().messages.create({
       model: COURSE_MODEL,
       max_tokens: 300,
-      system: PROMPT,
+      system: PROMPT + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
       messages: [{ role: "user", content: `오늘의 기록:\n${text}` }],
     });
     const textBlock = res.content.find((c) => c.type === "text");
