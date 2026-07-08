@@ -204,7 +204,10 @@
     "recoverSend": "Send recovery email",
     "recoverSent": "Email sent. If that address is registered, a link is on its way.",
     "recovered": "ID {code} restored on this device.",
-    "lost": "I lost my ID"
+    "lost": "I lost my ID",
+    "pasteHint": "On a device where the emailed link won't open (like an iPhone home-screen app), paste your recovery code here.",
+    "pastePlaceholder": "Paste recovery code or link",
+    "pasteSubmit": "Recover with code"
   },
   "settings": {
     "title": "Settings",

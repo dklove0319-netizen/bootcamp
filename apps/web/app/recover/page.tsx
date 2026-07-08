@@ -12,25 +12,22 @@ export default function Recover() {
   const [mode, setMode] = useState<"form" | "busy" | "sent" | "restored" | "bad">("busy");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
+  const [pasteCode, setPasteCode] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let token = "";
-    try {
-      token = new URLSearchParams(window.location.search).get("token") ?? "";
-    } catch {
-      token = "";
-    }
-    if (token === "") { setMode("form"); return; }
+  // 토큰 하나로 이 기기에 아이디를 복원한다 (URL 링크로 왔거나, 아래 칸에 붙여넣었거나 — 둘 다 같은 길)
+  // 아이폰 홈 화면 앱은 주소창이 없어 링크를 못 여니, 코드를 붙여넣는 길이 반드시 필요하다.
+  function redeem(token: string): void {
+    setMode("busy");
     fetch("/api/email/recover", {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ token }),
     })
       .then(async (r) => {
-        if (!r.ok) { setMode("bad"); return; }
+        if (!r.ok) { setError(m.email.confirmBad); setMode("form"); return; }
         const d = (await r.json()) as { secret?: string; observerCode?: string };
-        if (d.secret === undefined || d.observerCode === undefined) { setMode("bad"); return; }
+        if (d.secret === undefined || d.observerCode === undefined) { setError(m.email.confirmBad); setMode("form"); return; }
         try {
           window.localStorage.setItem(KEY, d.secret);
           window.localStorage.setItem(CODE, d.observerCode);
@@ -40,7 +37,19 @@ export default function Recover() {
         setCode(d.observerCode);
         setMode("restored");
       })
-      .catch(() => setMode("bad"));
+      .catch(() => { setError(m.email.confirmBad); setMode("form"); });
+  }
+
+  useEffect(() => {
+    let token = "";
+    try {
+      token = new URLSearchParams(window.location.search).get("token") ?? "";
+    } catch {
+      token = "";
+    }
+    if (token === "") { setMode("form"); return; }
+    redeem(token);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function request() {
@@ -82,6 +91,34 @@ export default function Recover() {
           {error !== "" && <p style={{ color: "#a05b3f", fontSize: 14, margin: "10px 0 0" }}>{error}</p>}
           <div style={{ marginTop: 16 }}>
             <button type="button" className="btn" onClick={request}>{m.email.recoverSend}</button>
+          </div>
+
+          {/* 복구 코드 붙여넣기 — 아이폰 홈 화면 앱처럼 링크를 못 여는 곳에서 쓴다 */}
+          <div style={{ marginTop: 28, paddingTop: 18, borderTop: "1px solid #e3d9c8" }}>
+            <p className="muted" style={{ fontSize: 13, lineHeight: 1.7, margin: "0 0 8px" }}>{m.email.pasteHint}</p>
+            <textarea
+              value={pasteCode}
+              onChange={(e) => setPasteCode(e.target.value)}
+              placeholder={m.email.pastePlaceholder}
+              rows={3}
+              style={{
+                display: "block", width: "100%", padding: 12, textAlign: "left",
+                background: "#fffdf8", color: "var(--ink)", border: "1px solid #e3d9c8", borderRadius: 8,
+                fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", wordBreak: "break-all",
+              }}
+            />
+            <div style={{ marginTop: 10 }}>
+              <button type="button" onClick={() => {
+                const raw = pasteCode.trim();
+                // 코드만 붙였든, 링크 전체를 붙였든(...?token=CODE) 토큰만 뽑아낸다
+                const token = raw.includes("token=") ? decodeURIComponent(raw.split("token=")[1].split(/[&\s]/)[0]) : raw;
+                if (token === "") { setError(m.email.bad); return; }
+                redeem(token);
+              }}
+                style={{ padding: "10px 16px", borderRadius: 8, border: "1px solid #d9d2c4", background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "var(--font-main)", fontSize: 14 }}>
+                {m.email.pasteSubmit}
+              </button>
+            </div>
           </div>
         </>
       )}
