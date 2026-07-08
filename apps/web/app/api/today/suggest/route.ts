@@ -2,6 +2,7 @@
 import { getAI } from "@vibe-kit/ai";
 import { COURSE_MODEL } from "../../../../lib/ai-models";
 import { pickLocale, langLine } from "../../../../lib/locale";
+import { serviceStore } from "../../../../lib/db";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,17 @@ JSON 만: {"suggestions":["...","..."]}`;
 
 export async function POST(req: Request): Promise<Response> {
   const secret = req.headers.get("x-ozero-key") ?? "";
-  if (!/^[0-9a-fA-F-]{36}$/.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
+  // ⚠ 보안(리뷰 2026-07-08 중간-4): 형식만 맞으면 아무나 Opus 를 태우던 비용 남용 통로를 막는다 —
+  //    다른 AI 창구처럼 실제 등록 관찰자인지 확인한다.
+  const store = serviceStore();
+  if (store === null) return Response.json({ error: "unavailable" }, { status: 503 });
+  const pr = await fetch(`${store.url}/rest/v1/profiles?user_id=eq.${secret}&deleted_at=is.null&select=user_id`, {
+    headers: store.headers, cache: "no-store",
+  });
+  if (!(pr.ok && ((await pr.json()) as unknown[]).length > 0)) {
+    return Response.json({ error: "no-key" }, { status: 401 });
+  }
 
   let text = "";
   try {

@@ -114,7 +114,7 @@ export async function POST(req: Request): Promise<Response> {
   const store = serviceStore();
   if (store === null) return Response.json({ error: "unavailable" }, { status: 503 });
   const secret = req.headers.get("x-ozero-key") ?? "";
-  if (!/^[0-9a-fA-F-]{36}$/.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
   // 운영자(o000)·시험 관찰자(o999) 열쇠만 (검증 보고서 2026-07-08 개선 5 — 일반 관찰자의 시험 도구 접근 차단)
   const pr = await fetch(`${store.url}/rest/v1/profiles?user_id=eq.${secret}&select=user_id,observer_code`, {
     headers: store.headers, cache: "no-store",

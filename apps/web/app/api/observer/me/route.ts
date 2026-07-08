@@ -12,7 +12,7 @@ export async function GET(req: Request): Promise<Response> {
 
   const secret = req.headers.get("x-ozero-key") ?? "";
   // user_id 는 UUID. 형식이 아니면 조회 자체를 안 한다 (엉뚱한 필터 방지)
-  if (!/^[0-9a-fA-F-]{36}$/.test(secret)) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) {
     return Response.json({ error: "no-key" }, { status: 401 });
   }
 

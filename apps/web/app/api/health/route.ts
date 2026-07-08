@@ -1,5 +1,8 @@
 // 서버 건강 확인 창구 — 열쇠 "값"은 절대 노출하지 않고, 꽂힘 여부와 "모양"만 답한다.
 // 모양 = 길이대·따옴표 유무·앞뒤 공백 유무·https 시작 여부. 값 자체는 어떤 경우에도 내보내지 않는다.
+// ⚠ 보안(리뷰 2026-07-08 중간-2): 열쇠의 꽂힘·길이대도 정찰 재료라 운영자 암호 뒤로 잠근다.
+import { adminAuthed } from "../../../lib/admin";
+
 export const runtime = "nodejs";
 
 type Shape = {
@@ -22,9 +25,10 @@ function shapeOf(v: string | undefined): Shape {
   };
 }
 
-export async function GET(): Promise<Response> {
+export async function GET(req: Request): Promise<Response> {
+  if (!adminAuthed(req)) return Response.json({ error: "not-found" }, { status: 404 });
   return Response.json({
-    build: "v6-웹푸시진단", // 어느 배포가 응답 중인지 식별용
+    build: "v7-잠금", // 어느 배포가 응답 중인지 식별용
 
     SUPABASE_URL: shapeOf(process.env.SUPABASE_URL),
     SUPABASE_ANON_KEY: shapeOf(process.env.SUPABASE_ANON_KEY),

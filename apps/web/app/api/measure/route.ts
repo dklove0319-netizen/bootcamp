@@ -88,7 +88,7 @@ function todayUtc(): string {
 /** 오제로 아이디 보유자(비밀 열쇠가 실제 관찰자와 일치)면 하루 3회, 아니면 1회 */
 async function dailyLimitOf(req: Request): Promise<number> {
   const secret = req.headers.get("x-ozero-key") ?? "";
-  if (!/^[0-9a-fA-F-]{36}$/.test(secret)) return LIMIT_ANON;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) return LIMIT_ANON;
   const store = serviceStore();
   if (store === null) return LIMIT_ANON;
   try {

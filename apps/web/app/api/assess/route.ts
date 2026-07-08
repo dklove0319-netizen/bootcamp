@@ -7,8 +7,8 @@ export async function GET(req: Request): Promise<Response> {
   const store = serviceStore();
   if (store === null) return Response.json({ error: "unavailable" }, { status: 503 });
   const secret = req.headers.get("x-ozero-key") ?? "";
-  if (!/^[0-9a-fA-F-]{36}$/.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
-  const phase = new URL(req.url).searchParams.get("phase") ?? "day0";
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
+  const phase = new URL(req.url).searchParams.get("phase") === "day21" ? "day21" : "day0"; // 화이트리스트 (리뷰 2026-07-08 낮음-6)
   const r = await fetch(
     `${store.url}/rest/v1/assessments?user_id=eq.${secret}&phase=eq.${phase}&instrument=eq.who5&select=id&limit=1`,
     { headers: store.headers, cache: "no-store" }
@@ -21,7 +21,7 @@ export async function POST(req: Request): Promise<Response> {
   const store = serviceStore();
   if (store === null) return Response.json({ error: "unavailable" }, { status: 503 });
   const secret = req.headers.get("x-ozero-key") ?? "";
-  if (!/^[0-9a-fA-F-]{36}$/.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
 
   let body: { phase?: string; who5?: number[] };
   try {

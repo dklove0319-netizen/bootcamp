@@ -26,7 +26,7 @@ export async function POST(req: Request): Promise<Response> {
   const store = serviceStore();
   if (store === null) return Response.json({ error: "unavailable" }, { status: 503 });
   const secret = req.headers.get("x-ozero-key") ?? "";
-  if (!/^[0-9a-fA-F-]{36}$/.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
 
   let body: { provider?: string; paymentKey?: string; orderId?: string; amount?: number; currency?: string };
   try {

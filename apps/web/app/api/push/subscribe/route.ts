@@ -5,7 +5,7 @@ import { serviceStore } from "../../../../lib/db";
 export const runtime = "nodejs";
 
 async function ownerOf(store: { url: string; headers: Record<string, string> }, secret: string): Promise<boolean> {
-  if (!/^[0-9a-fA-F-]{36}$/.test(secret)) return false;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) return false;
   const r = await fetch(`${store.url}/rest/v1/profiles?user_id=eq.${secret}&deleted_at=is.null&select=user_id`, {
     headers: store.headers, cache: "no-store",
   });

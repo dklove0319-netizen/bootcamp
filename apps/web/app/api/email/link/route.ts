@@ -22,7 +22,7 @@ export async function POST(req: Request): Promise<Response> {
   const store = serviceStore();
   if (store === null) return Response.json({ error: "unavailable" }, { status: 503 });
   const secret = req.headers.get("x-ozero-key") ?? "";
-  if (!/^[0-9a-fA-F-]{36}$/.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
   const pr = await fetch(`${store.url}/rest/v1/profiles?user_id=eq.${secret}&deleted_at=is.null&select=observer_code`, {
     headers: store.headers, cache: "no-store",
   });
@@ -38,12 +38,15 @@ export async function POST(req: Request): Promise<Response> {
   if (!EMAIL_RE.test(email) || email.length > 254) return Response.json({ error: "bad-email" }, { status: 400 });
 
   // 한 이메일 = 한 아이디 (복구가 유일하게 짚을 수 있어야 하니까)
+  // ⚠ 보안(리뷰 2026-07-08 중간-3): 이미 쓰이는 이메일이어도 409 로 알려주지 않는다 —
+  //    가입 여부를 캐내는 열거 통로가 되기 때문(정신건강 앱에선 가입 사실 자체가 민감).
+  //    대신 확인 메일을 보내지 않고 정상과 같은 응답을 준다 (본인 소유 이메일이면 정상 흐름과 구분 불가).
   const dup = await fetch(
     `${store.url}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&user_id=neq.${secret}&deleted_at=is.null&select=user_id`,
     { headers: store.headers, cache: "no-store" }
   );
   if (dup.ok && ((await dup.json()) as unknown[]).length > 0) {
-    return Response.json({ error: "email-taken" }, { status: 409 });
+    return Response.json({ sent: true }); // 열거 방지 — 실제로는 보내지 않음
   }
 
   const token = signToken({ u: secret, e: email, k: "link", x: Math.floor(Date.now() / 1000) + TTL_SEC });

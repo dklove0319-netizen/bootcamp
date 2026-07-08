@@ -24,6 +24,13 @@ function shiftDate(dateISO: string, days: number): string {
 }
 
 export async function POST(req: Request): Promise<Response> {
+  // ⚠ 보안(리뷰 2026-07-08 중간-5): 무인증 반복 호출로 전 테이블 스캔을 유발하던 비용 남용을 막는다.
+  //    CRON_SECRET 이 설정돼 있으면 크론 전용 열쇠(또는 운영자 암호)를 요구한다. 미설정이면 기존대로 통과(비파괴).
+  const cronSecret = process.env.CRON_SECRET ?? "";
+  if (cronSecret !== "") {
+    const given = req.headers.get("x-cron-key") ?? "";
+    if (given !== cronSecret && !adminAuthed(req)) return Response.json({ error: "not-found" }, { status: 404 });
+  }
   const store = serviceStore();
   if (store === null) return Response.json({ error: "unavailable" }, { status: 503 });
   const pub = process.env.VAPID_PUBLIC_KEY ?? "";

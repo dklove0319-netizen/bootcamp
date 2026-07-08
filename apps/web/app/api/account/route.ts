@@ -10,7 +10,7 @@ const RESEARCH_VERSION = "v1"; // PRICING_SPEC 동의 문구 버전
 type StoreT = { url: string; headers: Record<string, string> };
 
 async function ownerOf(store: StoreT, secret: string): Promise<boolean> {
-  if (!/^[0-9a-fA-F-]{36}$/.test(secret)) return false;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) return false;
   const r = await fetch(`${store.url}/rest/v1/profiles?user_id=eq.${secret}&deleted_at=is.null&select=user_id`, {
     headers: store.headers, cache: "no-store",
   });
