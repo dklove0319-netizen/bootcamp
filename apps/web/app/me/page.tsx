@@ -42,15 +42,37 @@ function vapidBytes(key: string): Uint8Array {
 function NotifySwitch({ m, hourText }: { m: ReturnType<typeof useMessages>; hourText: string }) {
   const [st, setSt] = useState<"checking" | "unsupported" | "off" | "on" | "busy" | "denied" | "failed">("checking");
 
+  // 브라우저 구독을 서버 창고에 저장 (idempotent — 여러 번 불러도 안전). 성공 여부를 돌려준다.
+  async function saveSub(sub: PushSubscription): Promise<boolean> {
+    const key = window.localStorage.getItem(KEY);
+    try {
+      const res = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(key !== null ? { "x-ozero-key": key } : {}) },
+        body: JSON.stringify(sub.toJSON()),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
       setSt("unsupported");
       return;
     }
+    // 자가 치유(2026-07-08): 브라우저엔 구독이 있는데 서버 저장이 어긋난 경우(되찾기 전 만들어진 구독 등)를
+    // 앱을 열 때마다 서버로 다시 맞춘다. 저장이 안 되면 꺼진 것으로 본다 (다시 켜기 유도).
     navigator.serviceWorker.getRegistration()
       .then((reg) => (reg ? reg.pushManager.getSubscription() : null))
-      .then((sub) => setSt(sub !== null ? "on" : "off"))
+      .then(async (sub) => {
+        if (sub === null) { setSt("off"); return; }
+        const ok = await saveSub(sub);
+        setSt(ok ? "on" : "off");
+      })
       .catch(() => setSt("off"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function enable() {
@@ -66,13 +88,7 @@ function NotifySwitch({ m, hourText }: { m: ReturnType<typeof useMessages>; hour
         userVisibleOnly: true,
         applicationServerKey: vapidBytes(publicKey) as unknown as BufferSource,
       });
-      const key = window.localStorage.getItem(KEY);
-      const res = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "content-type": "application/json", ...(key !== null ? { "x-ozero-key": key } : {}) },
-        body: JSON.stringify(sub.toJSON()),
-      });
-      setSt(res.ok ? "on" : "failed");
+      setSt((await saveSub(sub)) ? "on" : "failed");
     } catch {
       setSt("failed");
     }
