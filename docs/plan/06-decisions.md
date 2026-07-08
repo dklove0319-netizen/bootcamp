@@ -226,3 +226,18 @@
 - 왜: 사용자가 발급한 새 팀 범위 토큰으로 ADMIN_KEY·VAPID 3종을 API로 등록·재배포했으나 VAPID_PUBLIC_KEY만 계속 빈값. health 진단(v6) 실측으로 원인 확정 — next.config env 목록(빌드 시점 새김)에 있는 값만 실패, 목록 밖(런타임 읽기)인 ADMIN_KEY·VAPID_PRIVATE_KEY는 정상. 2026-07-06 SUPABASE_URL/ANON_KEY 사고와 동일 패턴 재확인
 - 버린 대안: VAPID_PUBLIC_KEY를 next.config 목록에 그대로 두고 재배포만 반복 — 3차 재배포(2회 API 재배포 + 1회 진짜 git push)까지 전부 실패해 목록 자체가 원인임을 확정 후 폐기
 - 영향: VAPID_PUBLIC_KEY를 next.config env 목록에서 제거, /api/push/subscribe(GET)로 런타임 전달하도록 변경(ADMIN_KEY와 같은 안전한 패턴), Vercel 재등록(encrypted 타입). health 진단에 웹 푸시 열쇠 3종 모양 확인 추가(v6). 라이브 실측: 열쇠 7종 전부 "있음", /api/admin 200(관찰자 8명)·404 게이트 정상, /api/push/tick 이 vapid-missing 통과 후 table-missing(=block8.sql 대기)까지 도달
+
+## [2026-07-08] AI 출력 언어 = 화면 언어 (기록 언어 추종 폐기) + 모든 질문 물음표
+- 왜: 사용자 지시 — 영어 화면에서 한글 기록을 쓰면 질문이 한글로 나옴. 화면 언어가 곧 사용자가 읽는 언어
+- 버린 대안: 기록 언어 추종(기존) — 다국어 기기 사용자에게 어긋남 / 클라이언트 번역 — AI가 처음부터 그 언어로 말하는 게 정확
+- 영향: 7개 AI 창구에 langLine(locale) 주입 + ensureQuestionMark 서버 보정(AI가 빼먹어도 ?). 인용 조각만 원문 유지. 영어 경로에서 반사(구조 문장)는 접지 검증에 걸리면 조용히 생략될 수 있음(바넘 방지 우선)
+
+## [2026-07-08] 3-1 이메일 = 자체 서명 토큰(HMAC·30분) + Resend/Gmail 겸용 발송기
+- 왜: 실사용자 신원이 브라우저에만 있는 위험. Supabase Auth 매직링크는 시간당 2통 제한 + Site URL 설정 의존이라 부적합
+- 버린 대안: Supabase Auth / 비밀번호 계정(익명성 훼손) / 복구 코드 수동 발급(운영 부담)
+- 영향: lib/linktoken(위조 불가 도장)·lib/mail(자격증명 자동 선택), /api/email/link·recover, /me 연결 구역, /recover 페이지. 한 이메일=한 아이디, 미등록 이메일에도 같은 응답(열거 방지). 실발송은 Gmail 앱 비밀번호 또는 Resend+도메인 대기 — 그 전까지 운영자 시험 모드로 검증
+
+## [2026-07-08] 반사 접지 검증 공용화 + AI JSON 해석 강건화
+- 왜: E-4 검증 중 발견 — 모델이 근거를 문장 전체로 주면 "반사가 근거를 통째로 포함" 검사가 과도하게 엄격, JSON 앞 설명문이 붙으면 해석 전체 실패, 중간거울 지시문이 "사흘"로 굳어 14일을 안 봄
+- 버린 대안: 검증 완화(포함 검사 제거) — 바넘 차단력 상실이라 기각
+- 영향: reflectionGrounded(따옴표 조각이 검증된 원문 안에 있으면 통과) 3창구 공용, 중괄호 구간만 잘라 읽는 해석기 5창구, 중간거울 기간 중립화("14일 중 5일" 형식)
