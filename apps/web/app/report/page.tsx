@@ -19,6 +19,11 @@ type Report = {
   answers?: { dayNo: number; date: string | null; answer: string | null }[];
   links?: { delusion: string; emotion: string }[];
   who5?: { day0: number | null; day21: number };
+  selfWords?: {
+    day0: { date: string; texts: string[] } | null;
+    day21: { date: string; texts: string[] } | null;
+  };
+  returnedWays?: { date: string; src: string }[];
   finalQuestion?: {
     quoteDate: string | null; quoteSrc: string | null; question: string;
     reflection?: string | null; evidence?: { date: string; src: string }[];
@@ -82,6 +87,8 @@ export default function ReportPage() {
   const [state, setState] = useState<"loading" | "nokey" | "nojourney" | "day21" | "failed" | "ready">("loading");
   const [report, setReport] = useState<Report | null>(null);
   const [who5, setWho5] = useState<(number | null)[]>([null, null, null, null, null]);
+  const [selfChanged, setSelfChanged] = useState("");
+  const [selfNow, setSelfNow] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -124,9 +131,9 @@ export default function ReportPage() {
     );
   }
 
-  // 21일째 재설문 (S16 — 보고서 열기 직전 1회)
+  // 21일째 재설문 (S16 — 보고서 열기 직전 1회) + 자기 문답 2문항 (시작점의 문장과 나란히 놓을 재료)
   if (state === "day21") {
-    const filled = who5.every((v) => v !== null);
+    const filled = who5.every((v) => v !== null) && selfChanged.trim() !== "" && selfNow.trim() !== "";
     return (
       <main>
         <p style={{ marginTop: 32, fontSize: 16, lineHeight: 1.8 }}>{m.report.day21Intro}</p>
@@ -148,6 +155,18 @@ export default function ReportPage() {
             </div>
           ))}
         </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 24 }}>
+          {[
+            { q: m.report.day21Q1, v: selfChanged, set: setSelfChanged },
+            { q: m.report.day21Q2, v: selfNow, set: setSelfNow },
+          ].map((f, i) => (
+            <div key={i}>
+              <p style={{ margin: 0, fontSize: 15, lineHeight: 1.7 }}>{f.q}</p>
+              <textarea value={f.v} onChange={(e) => f.set(e.target.value)} rows={3} maxLength={2000}
+                style={{ width: "100%", marginTop: 6, padding: 10, fontSize: 15, lineHeight: 1.7, border: "1px solid #d9d2c4", borderRadius: 8, background: "transparent", color: "var(--ink)", resize: "vertical" }} />
+            </div>
+          ))}
+        </div>
         {error !== "" && <p style={{ color: "#a05b3f", fontSize: 14, margin: "10px 0 0" }}>{error}</p>}
         <div style={{ marginTop: "auto", paddingTop: 20, paddingBottom: 16 }}>
           <button type="button" className="btn" disabled={!filled || busy} onClick={async () => {
@@ -157,7 +176,7 @@ export default function ReportPage() {
               const res = await fetch("/api/assess", {
                 method: "POST",
                 headers: { "content-type": "application/json", ...(key !== null ? { "x-ozero-key": key } : {}) },
-                body: JSON.stringify({ phase: "day21", who5 }),
+                body: JSON.stringify({ phase: "day21", who5, self: [selfChanged.trim(), selfNow.trim()] }),
               });
               if (!res.ok) { setError(m.loop.saveFailed); return; }
               load();
@@ -259,6 +278,21 @@ export default function ReportPage() {
         </div>
       )}
 
+      {(r.returnedWays ?? []).length > 0 && (
+        <>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 4px" }}>{m.report.returnsTitle}</h2>
+          <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "0 0 8px" }}>{m.report.returnsHelp}</p>
+          <div>
+            {(r.returnedWays ?? []).map((w, i) => (
+              <div key={i} style={{ marginBottom: 10 }}>
+                <p className="muted" style={{ fontSize: 12, margin: 0 }}>{w.date}</p>
+                <p style={{ fontSize: 15, lineHeight: 1.7, margin: "3px 0 0" }}>“{w.src}”</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 8px" }}>{m.report.answersTitle}</h2>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {(r.answers ?? []).map((a) => (
@@ -278,6 +312,32 @@ export default function ReportPage() {
             <p key={i} className="muted" style={{ fontSize: 14, margin: "4px 0", lineHeight: 1.7 }}>“{l.delusion}” — {l.emotion}</p>
           ))}
         </div>
+      )}
+
+      {r.selfWords?.day21 !== null && r.selfWords?.day21 !== undefined && (
+        <>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 4px" }}>{m.report.selfTitle}</h2>
+          <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "0 0 10px" }}>{m.report.selfHelp}</p>
+          <div style={{ marginBottom: 12 }}>
+            <p className="muted" style={{ fontSize: 12, margin: 0 }}>{m.report.selfStart}{r.selfWords.day0 !== null ? ` · ${r.selfWords.day0.date}` : ""}</p>
+            {r.selfWords.day0 === null ? (
+              <p className="muted" style={{ fontSize: 14, margin: "3px 0 0" }}>{m.report.selfNoStart}</p>
+            ) : (
+              <p style={{ fontSize: 15, lineHeight: 1.7, margin: "3px 0 0" }}>“{r.selfWords.day0.texts[0]}”</p>
+            )}
+          </div>
+          <div>
+            <p className="muted" style={{ fontSize: 12, margin: 0 }}>{m.report.selfEnd} · {r.selfWords.day21.date}</p>
+            {[m.report.day21Q1, m.report.day21Q2].map((q, i) =>
+              r.selfWords?.day21?.texts[i] === undefined ? null : (
+                <div key={i} style={{ marginTop: i === 0 ? 3 : 10 }}>
+                  <p className="muted" style={{ fontSize: 12, margin: 0 }}>{q}</p>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, margin: "3px 0 0" }}>“{r.selfWords.day21.texts[i]}”</p>
+                </div>
+              )
+            )}
+          </div>
+        </>
       )}
 
       <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 8px" }}>{m.report.who5Title}</h2>

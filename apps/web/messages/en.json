@@ -158,7 +158,11 @@
     "who5Note": "WHO-5 Well-Being Index (World Health Organization, 1998)",
     "day0Submit": "Leave it",
     "peersCount": "Today {n} observers left a record.",
-    "peersShared": "One anonymous answer from the same day"
+    "peersShared": "One anonymous answer from the same day",
+    "day0Self": "What kind of person do you think you are, right now?",
+    "stage1": "Days 1–7 · splitting today's sentences into fact and delusion",
+    "stage2": "Days 8–14 · finding the sentence that returns across different events",
+    "stage3": "Days 15–21 · placing the start and now side by side"
   },
   "course": {
     "needId": "The 21-day course needs an Ozero ID. Get one through a measurement first.",
@@ -206,7 +210,16 @@
     "repeatsTitle": "Interpretations that returned",
     "repeatsHelp": "Different events, same interpretation — how many separate days it appeared. If the sentence stays while the events change, the sentence came from you, not the events.",
     "repeatsDays": "{n} days",
-    "repeatsNone": "No interpretation repeated across days."
+    "repeatsNone": "No interpretation repeated across days.",
+    "day21Q1": "What changed the most over these 21 days?",
+    "day21Q2": "What kind of person do you think you are now?",
+    "selfTitle": "Your sentence at the start, and at day 21",
+    "selfHelp": "Your answers to the same question — quoted as written, simply placed side by side.",
+    "selfStart": "Start",
+    "selfEnd": "Day 21",
+    "selfNoStart": "No answer remains from the start.",
+    "returnsTitle": "The ways you returned",
+    "returnsHelp": "Actions recorded on several days where you came back to the body or the present. Quoted as you wrote them."
   },
   "email": {
     "linkTitle": "Link an email",

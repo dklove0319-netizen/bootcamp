@@ -89,6 +89,7 @@ export default function Today() {
 
   // 단계별 입력 상태
   const [who5, setWho5] = useState<(number | null)[]>([null, null, null, null, null]);
+  const [selfNow, setSelfNow] = useState(""); // 시작점 자기 서술 — 21일째의 문장과 나란히 놓을 재료 (E-6)
   const [actionResult, setActionResult] = useState<string | null>(null);
   const [mood, setMood] = useState<number | null>(null);
   const [emo, setEmo] = useState<number | null>(null);
@@ -181,10 +182,20 @@ export default function Today() {
     </div>
   );
 
+  // 단계 한 줄 (21일 코스만) — 후기 반영: "무엇을 하고 있는지"가 보이면 좋았다 (E-6, 2026-07-10)
+  const stageLine =
+    t.courseLength === 21 && t.dayNo >= 1 && t.dayNo <= 21
+      ? t.dayNo <= 7 ? m.loop.stage1 : t.dayNo <= 14 ? m.loop.stage2 : m.loop.stage3
+      : null;
   const header = (
-    <p className="muted" style={{ margin: "28px 0 0", fontSize: 13 }}>
-      {m.loop.dayHeader.replace("{n}", String(t.dayNo)).replace("{len}", String(t.courseLength))}
-    </p>
+    <>
+      <p className="muted" style={{ margin: "28px 0 0", fontSize: 13 }}>
+        {m.loop.dayHeader.replace("{n}", String(t.dayNo)).replace("{len}", String(t.courseLength))}
+      </p>
+      {stageLine !== null && (
+        <p className="muted" style={{ margin: "2px 0 0", fontSize: 12 }}>{stageLine}</p>
+      )}
+    </>
   );
 
   // 코스 기간 종료
@@ -205,9 +216,9 @@ export default function Today() {
     );
   }
 
-  // S16 시작점 (생애 첫 기록 직전 1회)
+  // S16 시작점 (생애 첫 기록 직전 1회) + 자기 서술 1문항 — 21일째의 문장과 나란히 놓인다 (E-6)
   if (t.needsDay0) {
-    const filled = who5.every((v) => v !== null);
+    const filled = who5.every((v) => v !== null) && selfNow.trim() !== "";
     return (
       <main>
         <p style={{ marginTop: 32, fontSize: 16, lineHeight: 1.8 }}>{m.loop.day0Intro}</p>
@@ -231,6 +242,11 @@ export default function Today() {
           ))}
         </div>
         <p className="muted" style={{ fontSize: 11, margin: "14px 0 0" }}>{m.loop.who5Note}</p>
+        <div style={{ marginTop: 24 }}>
+          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.7 }}>{m.loop.day0Self}</p>
+          <textarea value={selfNow} onChange={(e) => setSelfNow(e.target.value)} rows={3} maxLength={2000}
+            style={{ width: "100%", marginTop: 6, padding: 10, fontSize: 15, lineHeight: 1.7, border: "1px solid #d9d2c4", borderRadius: 8, background: "transparent", color: "var(--ink)", resize: "vertical" }} />
+        </div>
         {error !== "" && <p style={{ color: "#a05b3f", fontSize: 14, margin: "10px 0 0" }}>{error}</p>}
         <div style={{ marginTop: "auto", paddingTop: 20, paddingBottom: 16 }}>
           <button type="button" className="btn" disabled={!filled || busy} onClick={async () => {
@@ -240,7 +256,7 @@ export default function Today() {
               const res = await fetch("/api/assess", {
                 method: "POST",
                 headers: { "content-type": "application/json", ...(key !== null ? { "x-ozero-key": key } : {}) },
-                body: JSON.stringify({ phase: "day0", who5 }),
+                body: JSON.stringify({ phase: "day0", who5, self: [selfNow.trim()] }),
               });
               if (!res.ok) { setError(m.loop.saveFailed); return; }
               setT({ ...t, needsDay0: false });

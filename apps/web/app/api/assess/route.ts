@@ -23,7 +23,7 @@ export async function POST(req: Request): Promise<Response> {
   const secret = req.headers.get("x-ozero-key") ?? "";
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(secret)) return Response.json({ error: "no-key" }, { status: 401 });
 
-  let body: { phase?: string; who5?: number[] };
+  let body: { phase?: string; who5?: number[]; self?: string[] };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -35,10 +35,21 @@ export async function POST(req: Request): Promise<Response> {
     return Response.json({ error: "incomplete" }, { status: 400 });
   }
   const total = who5.reduce((a, b) => a + b, 0);
+  // 자기 문답 (선택 — 있으면 검사: day0 1문항 / day21 2문항, 원문 그대로 보관)
+  const rows: Record<string, unknown>[] = [{ user_id: secret, phase, instrument: "who5", answers: who5, total_score: total }];
+  if (body.self !== undefined) {
+    const self = Array.isArray(body.self) ? body.self.map((s) => (typeof s === "string" ? s.trim() : "")) : [];
+    const want = phase === "day21" ? 2 : 1;
+    if (self.length !== want || self.some((s) => s === "" || s.length > 2000)) {
+      return Response.json({ error: "incomplete" }, { status: 400 });
+    }
+    // 일괄 넣기는 두 행의 칸 구성이 같아야 한다 (PostgREST) — 합계는 빈 값으로 칸만 맞춘다
+    rows.push({ user_id: secret, phase, instrument: "self", answers: self, total_score: null });
+  }
   const r = await fetch(`${store.url}/rest/v1/assessments`, {
     method: "POST",
     headers: { ...store.headers, prefer: "return=minimal" },
-    body: JSON.stringify({ user_id: secret, phase, instrument: "who5", answers: who5, total_score: total }),
+    body: JSON.stringify(rows),
   });
   if (!r.ok) return Response.json({ error: "failed" }, { status: 502 });
   return Response.json({ saved: true });
