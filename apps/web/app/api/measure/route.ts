@@ -7,6 +7,7 @@
 import { createHash } from "node:crypto";
 import { getAI } from "@vibe-kit/ai";
 import { MEASURE_MODEL } from "../../../lib/ai-models";
+import { CRAFT_COMMON, CRAFT_SPLIT } from "../../../lib/craft";
 import { pickLocale, langLine, ensureQuestionMark, type Locale } from "../../../lib/locale";
 import { serviceStore } from "../../../lib/db";
 
@@ -194,7 +195,7 @@ export async function POST(req: Request): Promise<Response> {
       model: MEASURE_MODEL,
       max_tokens: 2000,
       thinking: { type: "disabled" }, // 단순 분류 작업 — 생각 모드 끄면 더 빠르고 저렴
-      system: SYSTEM_PROMPT + "\n" + langLine(locale),
+      system: SYSTEM_PROMPT + "\n" + CRAFT_SPLIT + "\n" + CRAFT_COMMON + "\n" + langLine(locale),
       messages: [{ role: "user", content: userMessage }],
     });
 

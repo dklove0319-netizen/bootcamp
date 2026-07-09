@@ -2,6 +2,7 @@
 // 채점·일치율 없음. 어긋난 조각 1~2곳에만 카메라 기준 한 줄. 결과는 ai_split 로 저장.
 import { getAI } from "@vibe-kit/ai";
 import { COURSE_MODEL } from "../../../../lib/ai-models";
+import { CRAFT_COMMON, CRAFT_SPLIT } from "../../../../lib/craft";
 import { pickLocale, langLine } from "../../../../lib/locale";
 import { serviceStore } from "../../../../lib/db";
 import { loopWindow } from "../../../../lib/course";
@@ -46,7 +47,7 @@ export async function POST(req: Request): Promise<Response> {
     const res = await getAI().messages.create({
       model: COURSE_MODEL, // 코스는 Opus (사용자 확정 2026-07-05)
       max_tokens: 1500,
-      system: PROMPT + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
+      system: PROMPT + "\n" + CRAFT_SPLIT + "\n" + CRAFT_COMMON + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
       messages: [{ role: "user", content: msg }],
     });
     const textBlock = res.content.find((c) => c.type === "text");
