@@ -1,6 +1,6 @@
 // 오제로 아이디 발급/이어받기 + 첫 거울 저장 (스텝 3-0 · 명세: docs/plan/screens/S17-무료측정.md)
 // 하는 일:
-//  - mode 'new'     → 가입 순서대로 다음 코드 발급 (레터 55명 다음 = o056부터)
+//  - mode 'new'     → 가입 순서대로 다음 코드 발급 (수동 발급분 MANUAL_CODE_FLOOR 다음부터)
 //  - mode 'existing'→ 레터에서 받은 오제로 아이디를 그대로 이어받기 (앱에 없던 코드만)
 //  그 아래 profiles(관찰자) + journeys(trial3 여정) + daily_entries(오늘 거울) 저장.
 //  브라우저엔 [보여줄 아이디(observer_code) + 비밀 열쇠(secret=user_id)]를 돌려준다.
@@ -54,14 +54,19 @@ function normalizeCode(raw: string): string | null {
   return "o" + String(n).padStart(3, "0");
 }
 
-/** 창고에 등록된 코드들을 읽어 다음 발급 번호를 정한다 (레터 55명 다음 = 최소 56) */
+/** 수동(레터·오프라인) 발급이 이 번호까지 나감 — 앱은 그 다음 번호부터.
+ *  운영자가 밖에서 번호를 더 발급하면 이 숫자만 올리면 된다.
+ *  이력: o055(레터, 2026-07-05) → o072(수동 발급, 사용자 지시 2026-07-09) */
+const MANUAL_CODE_FLOOR = 72;
+
+/** 창고에 등록된 코드들을 읽어 다음 발급 번호를 정한다 (수동 발급분 다음부터) */
 async function nextCode(store: Store): Promise<string> {
   const r = await fetch(`${store.url}/rest/v1/profiles?select=observer_code`, {
     headers: store.headers,
     cache: "no-store",
   });
   const rows = r.ok ? ((await r.json()) as { observer_code: string }[]) : [];
-  let max = 55; // 레터에서 o055까지 발급됨 — 앱은 o056부터
+  let max = MANUAL_CODE_FLOOR;
   for (const row of rows) {
     const m = /^o(\d+)$/.exec(row.observer_code ?? "");
     if (m) {
