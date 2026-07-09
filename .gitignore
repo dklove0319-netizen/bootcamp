@@ -27,3 +27,6 @@ test-results/
 playwright-report/
 .claude/.harness-state.json
 .github/workflows/
+
+# 오제로 원자료 금고 — 고객 개인 기록·레터 원본. 깃허브에 절대 올리지 않는다 (증류물만 코드로 들어간다)
+docs/corpus/
