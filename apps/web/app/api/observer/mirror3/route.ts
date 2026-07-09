@@ -4,6 +4,7 @@
 // 인용은 서버가 원문 대조로 검증한다 — 원문에 없는 문장은 버린다 (절대 규칙 2).
 import { getAI } from "@vibe-kit/ai";
 import { MEASURE_MODEL } from "../../../../lib/ai-models";
+import { CRAFT_COMMON, CRAFT_MIRROR } from "../../../../lib/craft";
 import { pickLocale, langLine, ensureQuestionMark } from "../../../../lib/locale";
 import { reflectionGrounded } from "../../../../lib/course";
 import { serviceStore } from "../../../../lib/db";
@@ -84,7 +85,7 @@ export async function GET(req: Request): Promise<Response> {
       model: MEASURE_MODEL,
       max_tokens: 1200,
       thinking: { type: "disabled" },
-      system: MIRROR3_PROMPT + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
+      system: MIRROR3_PROMPT + "\n" + CRAFT_MIRROR + "\n" + CRAFT_COMMON + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
       messages: [{ role: "user", content: userMessage }],
     });
     const textBlock = res.content.find((c) => c.type === "text");

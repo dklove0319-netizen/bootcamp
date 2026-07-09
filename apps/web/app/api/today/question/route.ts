@@ -6,6 +6,7 @@ import { getAI } from "@vibe-kit/ai";
 import { COURSE_MODEL } from "../../../../lib/ai-models";
 import { serviceStore } from "../../../../lib/db";
 import { loopWindow, reflectionGrounded } from "../../../../lib/course";
+import { CRAFT_COMMON, CRAFT_QUESTION } from "../../../../lib/craft";
 import { pickLocale, langLine, ensureQuestionMark } from "../../../../lib/locale";
 
 export const runtime = "nodejs";
@@ -83,7 +84,7 @@ export async function POST(req: Request): Promise<Response> {
     const res = await getAI().messages.create({
       model: COURSE_MODEL,
       max_tokens: 900,
-      system: PROMPT + "\n" + langLine(locale),
+      system: PROMPT + "\n" + CRAFT_QUESTION + "\n" + CRAFT_COMMON + "\n" + langLine(locale),
       messages: [{ role: "user", content: msg }],
     });
     const textBlock = res.content.find((c) => c.type === "text");

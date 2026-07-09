@@ -2,6 +2,7 @@
 // 패턴 명명·유형 라벨·성장 평가·축하 전부 금지 (지시서 4·11번).
 import { getAI } from "@vibe-kit/ai";
 import { COURSE_MODEL } from "../../../lib/ai-models";
+import { CRAFT_COMMON, CRAFT_MIRROR } from "../../../lib/craft";
 import { pickLocale, langLine, ensureQuestionMark } from "../../../lib/locale";
 import { reflectionGrounded } from "../../../lib/course";
 import { serviceStore } from "../../../lib/db";
@@ -150,7 +151,7 @@ export async function GET(req: Request): Promise<Response> {
     const res = await getAI().messages.create({
       model: COURSE_MODEL,
       max_tokens: 900,
-      system: FINAL_Q_PROMPT + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
+      system: FINAL_Q_PROMPT + "\n" + CRAFT_MIRROR + "\n" + CRAFT_COMMON + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
       messages: [{ role: "user", content: sample.map(([d, t]) => `[${d}]\n${t}`).join("\n\n") }],
     });
     const textBlock = res.content.find((c) => c.type === "text");
