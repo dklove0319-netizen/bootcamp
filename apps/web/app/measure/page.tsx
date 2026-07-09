@@ -199,6 +199,27 @@ export default function Measure() {
                 >
                   {LABEL_TEXT[c.label]}
                 </p>
+                {c.label === "unclear" && (
+                  // 유보는 진짜 질문이어야 한다 (사용자 지시 2026-07-10) — 그 자리에서 사용자가 놓는다
+                  <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 8 }}>
+                    {([["fact", m.measure.fact], ["delusion", m.measure.delusion]] as const).map(([v, label]) => (
+                      <button key={v} type="button"
+                        onClick={() => setResult((prev) => {
+                          if (prev === null) return prev;
+                          const items = prev.items.map((it, j) => (j === i ? { ...it, label: v } : it));
+                          return {
+                            ...prev,
+                            items,
+                            factCount: items.filter((x) => x.label === "fact").length,
+                            delusionCount: items.filter((x) => x.label === "delusion").length,
+                          };
+                        })}
+                        style={{ padding: "5px 16px", borderRadius: 999, fontSize: 13, cursor: "pointer", border: "1px solid #d9d2c4", background: "transparent", color: "var(--muted)", fontFamily: "inherit" }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {c.reason !== null && (
                   <p className="muted" style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.7 }}>
                     {c.reason}
