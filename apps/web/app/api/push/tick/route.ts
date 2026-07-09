@@ -65,8 +65,10 @@ export async function POST(req: Request): Promise<Response> {
     if (mySubs.length === 0) continue;
     const j = journeyOf.get(p.user_id);
     if (j === undefined) continue; // 활성 여정 없는 사람에겐 보내지 않는다
+    // 깃허브 무료 타이머는 시간을 자주 거른다(실측 2026-07-10: 33시간 중 5회만 실행 — o000 자정 알림 미발송 사고).
+    // 정각 일치 대신 "창이 열린 지 3시간 안"이면 아직 안 받은 사람에게 보낸다. 중복은 last_sent_date 가 막는다.
     const hour = forcedHour ?? localHour(p.timezone);
-    if (hour !== p.record_hour) continue;
+    if ((hour - p.record_hour + 24) % 24 >= 3) continue;
     const { entryDate } = loopWindow(new Date(), p.timezone, p.record_hour);
     if (j.start_date !== null && dayNoOf(entryDate, j.start_date) > courseLength(j.course)) continue; // 코스 끝난 사람 제외
     const due = mySubs.filter((s) => s.last_sent_date === null || s.last_sent_date < entryDate);
@@ -126,7 +128,8 @@ export async function POST(req: Request): Promise<Response> {
     if (mySubs.length === 0) continue;
     if (journeyOf.get(p.user_id) === undefined) continue;
     const hour = forcedHour ?? localHour(p.timezone);
-    if (hour !== REMINDER_HOUR || p.record_hour === REMINDER_HOUR) continue; // 저녁 푸시 시각과 겹치면 저녁이 우선
+    if ((hour - REMINDER_HOUR + 24) % 24 >= 2) continue; // 13~14시 사이 따라잡기 (타이머가 13시 정각을 걸러도 발송)
+    if ((hour - p.record_hour + 24) % 24 < 3) continue; // 저녁 창이 갓 열린 시간대면 저녁이 우선
     const { entryDate } = loopWindow(new Date(), p.timezone, p.record_hour);
     remindTargets.push({ p, entryDate, subs: mySubs });
   }
