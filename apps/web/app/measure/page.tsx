@@ -111,7 +111,7 @@ export default function Measure() {
         if (d !== null && d.allowed === false) setPhase("limited");
       })
       .catch(() => {
-        // 확인 실패면 그냥 진행 — 최종 판정은 서버가 한다
+        // 확인 실패면 그냥 진행 — 최종 판단은 서버가 한다
       })
       .finally(() => setGateReady(true));
     // 어제의 회수: 아이디 보유자에게 "내일 돌아온다" 약속을 지키는 화면

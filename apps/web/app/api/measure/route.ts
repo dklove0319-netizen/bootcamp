@@ -111,7 +111,7 @@ async function dailyLimitOf(req: Request): Promise<number> {
   }
 }
 
-/** 오늘 사용 횟수. null = 판정 불가(창고 장애·열쇠 없음) — 이때는 막지 않는다 */
+/** 오늘 사용 횟수. null = 판단 불가(창고 장애·열쇠 없음) — 이때는 막지 않는다 */
 async function usedToday(ipHash: string, day: string): Promise<number | null> {
   const store = serviceStore();
   if (store === null) return null;
@@ -177,7 +177,7 @@ export async function POST(req: Request): Promise<Response> {
     return Response.json({ error: t.tooLong }, { status: 400 });
   }
 
-  // 횟수 판정 — AI 호출(비용) 전에 먼저. 하루 경계는 서버 날짜(UTC), 클라이언트 시계 아님
+  // 횟수 판단 — AI 호출(비용) 전에 먼저. 하루 경계는 서버 날짜(UTC), 클라이언트 시계 아님
   const day = todayUtc();
   const ipHash = ipHashOf(req);
   const [used, limit] = await Promise.all([usedToday(ipHash, day), dailyLimitOf(req)]);

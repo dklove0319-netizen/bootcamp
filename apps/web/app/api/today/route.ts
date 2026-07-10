@@ -1,5 +1,5 @@
 // 하루 루프 창구 (블럭 4·5 · 명세: S01~S11)
-// GET: 오늘의 상태 — 게이팅(서버 판정), 어제의 회수, 오늘 진행 위치, 격자, 중간 거울 노출 여부
+// GET: 오늘의 상태 — 게이팅(서버 판단), 어제의 회수, 오늘 진행 위치, 격자, 중간 거울 노출 여부
 // POST: 단계 저장 — opening/scales/record/split/links/answer/action (수정 불가 원칙: 제출 후 잠금)
 import { serviceStore, type Store } from "../../../lib/db";
 import { loopWindow, dayNoOf, courseLength, detectCrisis } from "../../../lib/course";
