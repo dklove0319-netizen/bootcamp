@@ -124,6 +124,7 @@ export default function SaveMirror({ measurement }: { measurement: Measurement }
   if (stage === "idle") {
     return (
       <div style={{ marginTop: 26 }}>
+        <p className="muted" style={{ fontSize: 13, margin: "0 0 10px", lineHeight: 1.7 }}>{m.save.ladder}</p>
         <p style={{ fontSize: 16, margin: "0 0 4px" }}>{m.save.prompt}</p>
         <p className="muted" style={{ fontSize: 13, margin: "0 0 12px", lineHeight: 1.7 }}>{m.save.hint}</p>
         <button type="button" className="btn" onClick={() => setStage("form")}>

@@ -366,6 +366,15 @@ export default function ReportPage() {
         </div>
       )}
 
+      <div style={{ marginTop: 30, paddingTop: 18, borderTop: "1px solid #e3d9c8" }}>
+        <p className="muted" style={{ fontSize: 13, lineHeight: 1.8, margin: 0 }}>
+          {m.report.nextDoor1}
+          <br />
+          {m.report.nextDoor2}
+        </p>
+        <p style={{ fontSize: 15, lineHeight: 1.8, margin: "10px 0 0" }}>{m.report.nextDoor3}</p>
+      </div>
+
       <div style={{ marginTop: "auto", paddingTop: 26, paddingBottom: 16 }}>
         <Link href="/me" className="muted" style={{ textDecoration: "underline" }}>{m.save.toMe}</Link>
       </div>

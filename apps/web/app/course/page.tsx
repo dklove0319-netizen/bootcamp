@@ -105,6 +105,12 @@ export default function Course() {
       <h1 style={{ fontSize: 24, fontWeight: 700, margin: "40px 0 6px" }}>{m.me.courseTitle}</h1>
       <p className="muted" style={{ fontSize: 14, lineHeight: 1.8, margin: 0 }}>{m.me.courseDesc}</p>
 
+      <div style={{ marginTop: 18 }}>
+        <p className="muted" style={{ fontSize: 11, margin: "0 0 6px" }}>{m.course.reviewsLabel}</p>
+        <p style={{ fontSize: 14, lineHeight: 1.8, margin: 0 }}>“{m.course.review1}”</p>
+        <p style={{ fontSize: 14, lineHeight: 1.8, margin: "8px 0 0" }}>“{m.course.review2}”</p>
+      </div>
+
       <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 22 }}>
         {(["KRW", "USD"] as const).map((c) => (
           <button key={c} type="button" onClick={() => setCurrency(c)}

@@ -5,7 +5,9 @@
     "nameEn": "오제로의 거울",
     "line1": "No consolation — just an accurate reflection.",
     "line2": "Keep only the facts. The problem is usually smaller than the story.",
-    "tagline": "Training to separate fact from delusion in your own record."
+    "tagline": "Training to separate fact from delusion in your own record.",
+    "scene1": "Some days, a thought that rose once carries on into the night.",
+    "scene2": "Some days, it feels like the same thing happened again."
   },
   "measure": {
     "start": "Try the mirror now",
@@ -52,6 +54,7 @@
     "shareCardDone": "Card saved."
   },
   "save": {
+    "ladder": "Today's is a single photograph. When twenty-one pile up from the same spot, the sentence that returns shows itself even as the events change.",
     "prompt": "This question does not end here.",
     "hint": "Get an Ozero ID — tomorrow, at the time you choose, today's answer comes back with the mirror's reading of it. Keep three days and the mirror reflects what repeats. No address, no password.",
     "cta": "Get an Ozero ID",
@@ -83,7 +86,7 @@
     "day1Face": "Your answer from day 1 ({d})",
     "courseCta": "Join",
     "courseTitle": "The 21-day course",
-    "courseDesc": "If three days show this much, twenty-one days become a map of what repeats. The mirror opens each evening at your chosen time, and on day 21 you receive a report built only from your own sentences.",
+    "courseDesc": "The first week you split fact from delusion. The second, you find the sentence that returns across different events. The third, you place the start and now side by side. Once the repetition shows, a gap opens between an event and your response — the energy spent on rumination comes back. On day 21 you receive a report built only from your own sentences.",
     "courseConsent": "Participants' records are used to verify Ozero's effect. That consent is the condition of this price.",
     "courseSoon": "Opening soon.",
     "records": "Kept mirrors",
@@ -165,6 +168,9 @@
     "stage3": "Days 15–21 · placing the start and now side by side"
   },
   "course": {
+    "reviewsLabel": "From participants of the Ozero Question Letter — the original of this same 21-day training.",
+    "review1": "Before: I poured hours of energy into chewing over interpretations. After: I watch from a little distance now — it clearly takes less energy.",
+    "review2": "Now, after all those things happen, a gap is forming where I think, even briefly, about what to choose next.",
     "needId": "The 21-day course needs an Ozero ID. Get one through a measurement first.",
     "agreeFirst": "Please check the verification consent — that consent is the condition of this price.",
     "tossNotReady": "The payment window is still loading. Please try again in a moment.",
@@ -219,7 +225,10 @@
     "selfEnd": "Day 21",
     "selfNoStart": "No answer remains from the start.",
     "returnsTitle": "The ways you returned",
-    "returnsHelp": "Actions recorded on several days where you came back to the body or the present. Quoted as you wrote them."
+    "returnsHelp": "Actions recorded on several days where you came back to the body or the present. Quoted as you wrote them.",
+    "nextDoor1": "This is as far as the mirror goes — showing you the repetition in your own words.",
+    "nextDoor2": "Where that sentence began is the work of the next layer.",
+    "nextDoor3": "Unconscious Deep Course 35 — thirty-five days led directly by the operator. Details will appear here when enrollment opens."
   },
   "email": {
     "linkTitle": "Link an email",

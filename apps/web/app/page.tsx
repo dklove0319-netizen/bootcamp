@@ -18,6 +18,11 @@ export default function Home() {
           {m.app.nameEn}
         </h2>
         <p className="muted" style={{ margin: "26px 0 0", fontSize: 14, lineHeight: 1.9 }}>
+          {m.app.scene1}
+          <br />
+          {m.app.scene2}
+        </p>
+        <p className="muted" style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.9 }}>
           {m.app.line1}
           <br />
           {m.app.line2}
