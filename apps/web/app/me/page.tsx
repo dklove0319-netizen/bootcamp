@@ -373,6 +373,11 @@ export default function MyMirror() {
         </div>
       )}
 
+      <div style={{ marginTop: 26 }}>
+        <Link href="/map" className="muted" style={{ textDecoration: "underline", fontSize: 14 }}>{m.map.link}</Link>
+        <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>{m.map.linkSub}</p>
+      </div>
+
       <h2 style={{ fontSize: 18, fontWeight: 600, margin: "34px 0 14px" }}>{m.me.records}</h2>
       {me.entries.length === 0 ? (
         <p className="muted" style={{ fontSize: 14 }}>{m.me.empty}</p>

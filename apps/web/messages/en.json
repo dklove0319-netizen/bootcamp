@@ -230,6 +230,14 @@
     "nextDoor2": "Where that sentence began is the work of the next layer.",
     "nextDoor3": "Unconscious Deep Course 35 — thirty-five days led directly by the operator. Details will appear here when enrollment opens."
   },
+  "map": {
+    "title": "My map",
+    "help": "Sentences that returned across different days, even as the events changed. All of it is a rearrangement of what you wrote — no evaluation.",
+    "days": "{n} days",
+    "empty": "No sentence has returned across days yet. The map draws itself as records accumulate.",
+    "link": "See my map",
+    "linkSub": "Sentences that returned across days, gathered on one page."
+  },
   "email": {
     "linkTitle": "Link an email",
     "linkHint": "Even if you switch devices or clear your browser, this address can recover your ID. Used for recovery only.",
