@@ -3,6 +3,7 @@
 // 답이 있으면 거울의 되비춤 한두 문장을 생성해 함께 돌려준다. 생성물은 그 기록에 저장해 재생성을 막는다.
 import { getAI } from "@vibe-kit/ai";
 import { MEASURE_MODEL } from "../../../../lib/ai-models";
+import { CRAFT_COMMON } from "../../../../lib/craft";
 import { serviceStore, today } from "../../../../lib/db";
 import { pickLocale, langLine, ensureQuestionMark } from "../../../../lib/locale";
 
@@ -79,7 +80,7 @@ export async function GET(req: Request): Promise<Response> {
       model: MEASURE_MODEL,
       max_tokens: 500,
       thinking: { type: "disabled" },
-      system: RECALL_PROMPT + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
+      system: RECALL_PROMPT + "\n" + CRAFT_COMMON + "\n" + langLine(pickLocale(req.headers.get("accept-language"))),
       messages: [
         {
           role: "user",
