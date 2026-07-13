@@ -196,9 +196,10 @@ export default function Seed() {
 
       {state === "done" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 18 }}>
-          <Link href="/me" style={{ textDecoration: "underline" }}>내 거울 보기 (사흘의 거울 · 격자 · 보고서 입구)</Link>
-          <Link href="/today" style={{ textDecoration: "underline" }}>오늘 루프 보기</Link>
-          <Link href="/report" style={{ textDecoration: "underline" }}>21일 보고서 보기 (21일치일 때)</Link>
+          <Link href="/today" style={{ textDecoration: "underline" }}>① 오늘 루프 보기 (단계 줄 · 10단계)</Link>
+          <Link href="/me" style={{ textDecoration: "underline" }}>② 내 거울 보기 (격자 · 반복의 거울)</Link>
+          <Link href="/map" style={{ textDecoration: "underline" }}>③ 나의 지도 보기 (여러 날 돌아온 문장)</Link>
+          <Link href="/report" style={{ textDecoration: "underline" }}>④ 21일 보고서 보기 (문답 → 보고서 · 다음 문)</Link>
         </div>
       )}
 
