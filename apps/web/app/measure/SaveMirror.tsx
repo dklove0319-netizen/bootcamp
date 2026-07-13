@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMessages } from "../../lib/i18n";
 import { formatHour, clientLocale } from "../../lib/time";
+import NotifySwitch from "../components/NotifySwitch";
 
 export type Measurement = {
   freeText: string;
@@ -110,9 +111,12 @@ export default function SaveMirror({ measurement }: { measurement: Measurement }
         <p className="font-main" style={{ fontSize: 30, fontWeight: 700, margin: "4px 0 0", letterSpacing: "0.05em" }}>
           {done.observerCode}
         </p>
-        <p className="muted" style={{ fontSize: 14, margin: "10px 0 14px" }}>
+        <p className="muted" style={{ fontSize: 14, margin: "10px 0 0" }}>
           {m.save.doneTime.replace("{t}", formatHour(done.recordHour, loc))}
         </p>
+        <div style={{ margin: "4px 0 14px" }}>
+          <NotifySwitch m={m} hourText={formatHour(done.recordHour, loc)} />
+        </div>
         <Link href="/me" className="btn">
           {m.save.toMe}
         </Link>
@@ -207,6 +211,11 @@ export default function SaveMirror({ measurement }: { measurement: Measurement }
           </option>
         ))}
       </select>
+      {recordHour <= 4 && (
+        <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "-8px 0 16px" }}>
+          {m.save.nightHint.replace("{t}", formatHour(recordHour, loc))}
+        </p>
+      )}
 
       {error !== "" && <p style={{ color: "#a05b3f", fontSize: 14, margin: "0 0 12px" }}>{error}</p>}
 
