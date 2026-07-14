@@ -22,7 +22,8 @@ export default function Home() {
           <br />
           {m.app.scene2}
         </p>
-        <p className="muted" style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.9 }}>
+        <p style={{ margin: "12px 0 0", fontSize: 15, lineHeight: 1.9 }}>{m.app.promise}</p>
+        <p className="muted" style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.9 }}>
           {m.app.line1}
           <br />
           {m.app.line2}

@@ -24,6 +24,7 @@ type Report = {
     day21: { date: string; texts: string[] } | null;
   };
   returnedWays?: { date: string; src: string }[];
+  actionStats?: { from: number; to: number; done: number; partial: number; skipped: number }[];
   finalQuestion?: {
     quoteDate: string | null; quoteSrc: string | null; question: string;
     reflection?: string | null; evidence?: { date: string; src: string }[];
@@ -292,6 +293,25 @@ export default function ReportPage() {
           </div>
         </>
       )}
+
+      {(() => {
+        const stats = r.actionStats ?? [];
+        const total = stats.reduce((s, w) => s + w.done + w.partial + w.skipped, 0);
+        if (total === 0) return null;
+        return (
+          <>
+            <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 4px" }}>{m.report.actionTitle}</h2>
+            <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, margin: "0 0 8px" }}>{m.report.actionHelp}</p>
+            {stats.map((w, i) => (
+              <p key={i} style={{ fontSize: 14, lineHeight: 1.8, margin: "2px 0" }}>
+                <span className="muted">{m.report.actionWeek.replace("{a}", String(w.from)).replace("{b}", String(w.to))}</span>
+                {" — "}
+                {m.report.actionCounts.replace("{d}", String(w.done)).replace("{p}", String(w.partial)).replace("{s}", String(w.skipped))}
+              </p>
+            ))}
+          </>
+        );
+      })()}
 
       <h2 style={{ fontSize: 16, fontWeight: 600, margin: "28px 0 8px" }}>{m.report.answersTitle}</h2>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

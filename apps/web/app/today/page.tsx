@@ -406,6 +406,20 @@ export default function Today() {
       <main>
         {header}
         <p style={{ marginTop: 20, fontSize: 15, lineHeight: 1.7 }}>{m.loop.splitGuide}</p>
+        {(() => {
+          // 해부 전 게이트 (S-1) — 감정 세기가 높은 날엔 깊이 들어가지 않을 선택권 (유도 아님)
+          const ev = emo ?? t.today?.scores.emotion ?? null;
+          if (ev === null || ev < 8) return null;
+          return (
+            <div style={{ marginTop: 14 }}>
+              <p className="muted" style={{ fontSize: 13, lineHeight: 1.7, margin: 0 }}>{m.loop.gateNotice.replace("{v}", String(ev))}</p>
+              <button type="button" disabled={busy} onClick={async () => { if (await post("close", {})) setStep(11); }}
+                style={{ marginTop: 8, padding: "7px 14px", borderRadius: 999, border: "1px solid #d9d2c4", background: "transparent", color: "var(--muted)", cursor: "pointer", fontSize: 13, fontFamily: "var(--font-main)" }}>
+                {m.loop.gateClose}
+              </button>
+            </div>
+          );
+        })()}
         <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 18 }}>
           {fragments.map((frag, i) => (
             <div key={i}>
@@ -478,6 +492,7 @@ export default function Today() {
             })}
           </div>
         )}
+        <p className="muted" style={{ marginTop: 18, fontSize: 13, lineHeight: 1.7 }}>{m.loop.closeLine}</p>
         <div style={{ marginTop: "auto", paddingTop: 18, paddingBottom: 16 }}>
           <button type="button" className="btn" onClick={() => {
             const myDelusions = fragments.filter((_, i) => labels[i] === "delusion");

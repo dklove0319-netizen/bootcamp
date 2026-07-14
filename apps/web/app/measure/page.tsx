@@ -257,6 +257,7 @@ export default function Measure() {
             <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={3} style={boxStyle} />
           </>
         )}
+        <p className="muted" style={{ marginTop: 18, fontSize: 13, lineHeight: 1.7 }}>{m.loop.closeLine}</p>
         <SaveMirror
           measurement={{
             freeText: text,

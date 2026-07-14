@@ -121,7 +121,7 @@ export async function GET(req: Request): Promise<Response> {
 }
 
 const STEP_NO: Record<string, number> = {
-  opening: 1, scales: 2, record: 3, split: 5, links: 7, answer: 9, action: 10,
+  opening: 1, scales: 2, record: 3, close: 4, split: 5, links: 7, answer: 9, action: 10,
 };
 
 export async function POST(req: Request): Promise<Response> {
@@ -222,6 +222,17 @@ export async function POST(req: Request): Promise<Response> {
     crisis = detectCrisis(text);
     patch.free_text = text;
     patch.crisis_detected = crisis;
+  } else if (step === "close") {
+    // 조기 닫기 (S-1) — 감정이 높은 날 "여기까지 남기고 닫기". 기록이 있어야 하고, 닫으면 제출과 같은 잠금.
+    const cr = await fetch(
+      `${store.url}/rest/v1/daily_entries?user_id=eq.${secret}&entry_date=eq.${entryDate}&select=free_text`,
+      { headers: store.headers, cache: "no-store" }
+    );
+    const rows = cr.ok ? ((await cr.json()) as { free_text: string | null }[]) : [];
+    if (rows.length === 0 || typeof rows[0].free_text !== "string" || rows[0].free_text === "") {
+      return Response.json({ error: "empty" }, { status: 400 });
+    }
+    patch.submitted_at = new Date().toISOString(); // 관찰만 하고 닫음 — 제출로 집계, 이후 수정 불가
   } else if (step === "split") {
     patch.user_split = Array.isArray(data.userSplit) ? data.userSplit : [];
   } else if (step === "links") {

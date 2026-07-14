@@ -134,6 +134,22 @@ export async function GET(req: Request): Promise<Response> {
     const high = moodScored.reduce((a, b) => ((b.score_mood as number) > (a.score_mood as number) ? b : a));
     moodDays = { low: pickDay(low), high: high === low ? null : pickDay(high) };
   }
+  // 행동 기록 집계 (S-3) — 했다/부분/안 했다 개수, 주차별. 평가 없이 개수만.
+  const actionStats = [
+    { from: 1, to: 7, done: 0, partial: 0, skipped: 0 },
+    { from: 8, to: 14, done: 0, partial: 0, skipped: 0 },
+    { from: 15, to: 21, done: 0, partial: 0, skipped: 0 },
+  ];
+  for (const e of submitted) {
+    const r2 = e.action_result;
+    const d = e.day_no as number;
+    const w = actionStats.find((w2) => d >= w2.from && d <= w2.to);
+    if (w === undefined) continue;
+    if (r2 === "done") w.done++;
+    else if (r2 === "partial") w.partial++;
+    else if (r2 === "skipped") w.skipped++;
+  }
+
   const links: { delusion: string; emotion: string }[] = [];
   for (const e of submitted) {
     const ls = e.delusion_emotion_links;
@@ -234,6 +250,7 @@ export async function GET(req: Request): Promise<Response> {
     who5: { day0: day0 === null ? null : day0.total_score, day21: day21.total_score },
     selfWords,
     returnedWays,
+    actionStats,
     finalQuestion,
   });
 }
